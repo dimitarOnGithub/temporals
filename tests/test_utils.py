@@ -1,5 +1,5 @@
 import pytest
-from datetime import time, date, datetime, UTC
+from datetime import time, date, datetime
 from periods.utils import get_datetime, _test_pattern, _test_defaults, _convert_to_type, convert_to_datetime
 
 
@@ -89,6 +89,10 @@ class TestUtils:
         assert isinstance(convert_to_datetime(self.date), datetime)
         self.time = time(15, 30, 11)
         assert isinstance(convert_to_datetime(self.time), datetime)
-        self.time_tz = time(15, 30, 11, tzinfo=UTC)
+        try:
+            from datetime import UTC
+            self.time_tz = time(15, 30, 11, tzinfo=UTC)
+        except ImportError:
+            self.time_tz = datetime.utcnow()
         assert isinstance(convert_to_datetime(self.time_tz), datetime)
         assert convert_to_datetime(self.time_tz) is not None
