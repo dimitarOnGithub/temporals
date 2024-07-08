@@ -1,4 +1,5 @@
 import pytest
+from sys import version_info
 from datetime import time, date, datetime
 from periods.utils import get_datetime, _test_pattern, _test_defaults, _convert_to_type, convert_to_datetime
 
@@ -50,8 +51,10 @@ class TestUtils:
         # Time
         self.valid_time = '15:30:11'
         assert isinstance(_test_defaults(self.valid_time), time)
-        self.valid_time_tz = '15:30:11-0700'
-        assert isinstance(_test_defaults(self.valid_time_tz), time)
+        if version_info.minor > 10:
+            # Only available starting 3.11 onwards
+            self.valid_time_tz = '15:30:11-0700'
+            assert isinstance(_test_defaults(self.valid_time_tz), time)
         self.invalid_time = '01:15 PM'
         assert _test_defaults(self.invalid_time) is None
 
