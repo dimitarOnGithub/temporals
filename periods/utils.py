@@ -169,21 +169,16 @@ def _test_time(point_in_time: str) -> time | None:
         return None
 
 
-def _test_date(point_in_time: str | int | float) -> date | None:
+def _test_date(point_in_time: str | int) -> date | None:
     """ Try to create a datetime.date object """
     pit_str: str = _convert_to_type(point_in_time, str)
     pit_int: int = _convert_to_type(point_in_time, int)
-    pit_float: float = _convert_to_type(point_in_time, float)
     try:
         return date.fromisoformat(pit_str)
     except (ValueError, TypeError):
         pass
     try:
         return date.fromordinal(pit_int)
-    except (ValueError, TypeError):
-        pass
-    try:
-        return date.fromtimestamp(pit_float)
     except (ValueError, TypeError):
         pass
     return None
