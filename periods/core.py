@@ -1,4 +1,5 @@
-from datetime import time, date, datetime, timedelta
+from datetime import time, date, datetime, timedelta, tzinfo
+from typing import Union
 from zoneinfo import ZoneInfo
 
 
@@ -22,17 +23,113 @@ class Period:
     def __contains__(self, item):
         raise NotImplemented(f'Period class does not contain __eq__ method, inheriting classes must override it')
 
+    def __lt__(self, other):
+        raise NotImplemented(f'Period class does not contain __lt__ method, inheriting classes must override it')
+
+    def __gt__(self, other):
+        raise NotImplemented(f'Period class does not contain __lt__ method, inheriting classes must override it')
+
     def __repr__(self):
-        return f"Period(start={self.start.__repr__()}, {self.end.__repr__()})"
+        return f"{self.__class__.__name__}(start={self.start.__repr__()}, {self.end.__repr__()})"
 
     def __str__(self):
         return f'{self.start}/{self.end}'
 
 
 class TimePeriod(Period):
+    """ The TimePeriod class is responsible for time periods within a 24-hour day. Instances of this class offer the
+    'equal' comparison (see __eq__ below), as well as the membership (is, is not) test operators (see __contains__)
+    below.
+    """
 
-    def __init__(self, start, end, **kwargs):
+    def __init__(self,
+                 start: time,
+                 end: time,
+                 **kwargs):
         super().__init__(start, end)
+
+    def __eq__(self, other):
+        """ Equality can only be determined between instances of this class, as well as the DatetimePeriod class, since
+        only these two classes contain information about the actual time in a day. In both cases, the instances will
+        be tested for equal start and end times.
+
+        # TODO: more docs when extra methods
+        """
+        if isinstance(other, DatetimePeriod):
+            return (self.start == other.start.time()
+                    and self.end == other.end.time())
+        if isinstance(other, TimePeriod):
+            return (self.start == other.start
+                    and self.end == other.end)
+        return False
+
+    def __contains__(self, item):
+        """ Membership test can be done with instances of this class, the DatetimePeriod class, datetime.datetime and
+        datetime.time objects; When membership test is done for a period, it assumes that the request is to check if
+        the tested period exists WITHIN the temporal borders of this period, that is to say, whether the start and
+        end times of the other period are after and before, respectively, of the same of this period.
+
+        If you have an instance of this period, for example:
+        >>> start = time(8, 0, 0)  # 8 o'clock in the morning
+        >>> end = time(17, 0, 0)  # 5 o'clock in the afternoon
+        >>> workday = TimePeriod(start=start, end=end)
+
+        and then another TimePeriod:
+        >>> lunch_start = time(12, 0, 0)  # 12 o'clock at lunch
+        >>> lunch_end = time(13, 0, 0)  # 1 o'clock in the afternoon
+        >>> lunch_break = TimePeriod(start=lunch_start, end=lunch_end)
+
+        Then you can check if the lunch_break period is within your workday period:
+        >>> lunch_break in workday
+
+        For more in-depth comparisons and functionality, see:
+            is_part_of
+            has_as_part
+            overlap
+            disconnect
+        """
+        if isinstance(item, TimePeriod):
+            """ Only return True if the start and end times of `item` are within the actual time duration of this 
+            period.
+            """
+            return item.start > self.start and item.end < self.end
+        if isinstance(item, DatetimePeriod):
+            return item.start.time() > self.start and item.end.time() < self.end
+        if isinstance(item, datetime):
+            item = item.time()
+        if isinstance(item, time):
+            return self.start < item < self.end
+        return False
+
+    def __lt__(self, other):
+        # TODO: think about if < makes sense
+        pass
+
+    def __gt__(self, other):
+        # TODO: think about if > makes sense
+        pass
+
+    def is_part_of(self,
+                   other: Union['TimePeriod', 'DatetimePeriod']) -> bool:
+        # TODO: Docs
+        if self not in other:
+            return False
+        other_start: time = None
+        other_end: time = None
+        if isinstance(other, TimePeriod):
+            other_start = other.start
+            other_end = other.end
+        if isinstance(other, DatetimePeriod):
+            other_start = other.start.time()
+            other_end = other.end.time()
+        if other_start < self.start or self.end > other_end:
+            return True
+        return False
+
+    def has_as_part(self,
+                    other: Union['TimePeriod', 'DatetimePeriod']) -> bool:
+        # TODO: docs
+        pass
 
 
 class DatePeriod(Period):
