@@ -89,6 +89,8 @@ def get_datetime(point_in_time: str,
     """
     # Check if the provided object is already an instance
     if isinstance(point_in_time, time) or isinstance(point_in_time, date) or isinstance(point_in_time, datetime):
+        if force_datetime:
+            point_in_time = convert_to_datetime(point_in_time)
         return point_in_time
 
     # Try the default datetime constructors
@@ -99,10 +101,7 @@ def get_datetime(point_in_time: str,
         behaviour of datetime's strptime() method - if a time, set date to 1900-01-01; if a date, set time to 0:0.
         """
         if force_datetime and not isinstance(_dt, datetime):
-            if isinstance(_dt, date):
-                _dt = datetime.combine(_dt, time(0, 0, 0))
-            else:
-                _dt = datetime.combine(date(1900, 1, 1), _dt, tzinfo=_dt.tzinfo)
+            _dt = convert_to_datetime(_dt)
         return _dt
 
     # Fall back on the known patterns
@@ -210,3 +209,13 @@ def _convert_to_type(value, target_type):
         return target_type(value)
     except (ValueError, TypeError):
         return None
+
+
+def convert_to_datetime(value: time | date) -> datetime:
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, date):
+        _dt = datetime.combine(value, time(0, 0, 0))
+    else:
+        _dt = datetime.combine(date(1900, 1, 1), value, tzinfo=value.tzinfo)
+    return _dt
