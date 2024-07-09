@@ -69,6 +69,11 @@ class TimePeriod(Period):
         the tested period exists WITHIN the temporal borders of this period, that is to say, whether the start and
         end times of the other period are after and before, respectively, of the same of this period.
 
+        0800       Your period:          1700
+        |==================================|
+             1200 |=============| 1300
+                         ^ The period you are testing
+
         If you have an instance of this period, for example:
         >>> start = time(8, 0, 0)  # 8 o'clock in the morning
         >>> end = time(17, 0, 0)  # 5 o'clock in the afternoon
@@ -109,11 +114,76 @@ class TimePeriod(Period):
         # TODO: think about if > makes sense
         pass
 
-    def is_part_of(self,
-                   other: Union['TimePeriod', 'DatetimePeriod']) -> bool:
-        # TODO: Docs
-        if self not in other:
-            return False
+    def overlaps_with(self,
+                      other: Union['TimePeriod', 'DatetimePeriod']
+                      ) -> bool:
+        """ Test if this period overlaps with another period that has begun before this one. This check will evaluate
+        as True in the following scenario:
+                        1000       This period:          1700
+                        |==================================|
+             0800 |=============| 1300
+                         ^ The other period
+
+        >>> this_start = time(10, 0, 0)
+        >>> this_end = time(17, 0, 0)
+        >>> other_start = (8, 0, 0)
+        >>> other_end = (13, 0, 0)
+        >>> this_period = TimePeriod(start=this_start, end=this_end)
+        >>> other_period = TimePeriod(start=other_start, end=other_end)
+        >>> this_period.overlaps_with(other_period)
+        True
+
+        The period that has begun first is considered the "main" period, even if it finishes before the end of this
+        period, since it occupies an earlier point in time. Therefore, the current period, which has begun at a later
+        point in time, is considered to be the overlapping one. Hence, the opposite check (overlapped_by) is True for
+        the other_period:
+        >>> other_period.overlapped_by(this_period)
+        True
+
+        Note that both of these checks will only work for partially overlapping periods - for fully overlapping periods,
+        use the `in` membership test:
+        >>> this_period in other_period
+        """
+        other_start: time = None
+        other_end: time = None
+        if isinstance(other, TimePeriod):
+            other_start = other.start
+            other_end = other.end
+        if isinstance(other, DatetimePeriod):
+            other_start = other.start.time()
+        if other_start < self.start and other_end < self.end:
+            return True
+        return False
+
+    def overlapped_by(self,
+                      other: Union['TimePeriod', 'DatetimePeriod']
+                      ) -> bool:
+        """ Test if this period is overlapped by the other period. This check will evaluate True in the following
+        scenario:
+           1000       This period:          1700
+            |==================================|
+                                1500 |=============| 1800
+                                            ^ The other period
+
+        >>> this_start = time(10, 0, 0)
+        >>> this_end = time(17, 0, 0)
+        >>> other_start = (15, 0, 0)
+        >>> other_end = (18, 0, 0)
+        >>> this_period = TimePeriod(start=this_start, end=this_end)
+        >>> other_period = TimePeriod(start=other_start, end=other_end)
+        >>> this_period.overlapped_by(other_period)
+        True
+
+        Since this period has begun first, it is considered the "main" one, and all other periods that begin after this
+        one, are considered to be overlapping it. Therefore, the opposite check, `overlaps_with`, will evaluate True
+        if the opposite check is being made:
+        >>> other_period.overlaps_with(this_period)
+        True
+
+        Note that both of these checks will only work for partially overlapping periods - for fully overlapping periods,
+        use the `in` membership test:
+        >>> this_period in other_period
+        """
         other_start: time = None
         other_end: time = None
         if isinstance(other, TimePeriod):
@@ -122,13 +192,18 @@ class TimePeriod(Period):
         if isinstance(other, DatetimePeriod):
             other_start = other.start.time()
             other_end = other.end.time()
-        if other_start < self.start or self.end > other_end:
+        if self.start < other_start and self.end < other_end:
             return True
         return False
 
-    def has_as_part(self,
-                    other: Union['TimePeriod', 'DatetimePeriod']) -> bool:
-        # TODO: docs
+    def overlap(self,
+                other: Union['TimePeriod', 'DatetimePeriod']
+                ) -> 'TimePeriod':
+        pass
+
+    def disconnect(self,
+                   other: Union['TimePeriod', 'DatetimePeriod']
+                   ) -> 'TimePeriod':
         pass
 
 
