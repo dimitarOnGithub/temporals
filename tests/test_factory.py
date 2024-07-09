@@ -1,6 +1,6 @@
 import pytest
-from periods import PeriodFactory
-from periods import TimePeriod, DatePeriod, DatetimePeriod
+from temporals import PeriodFactory
+from temporals import TimePeriod, DatePeriod, DatetimePeriod
 
 
 class TestFactory:

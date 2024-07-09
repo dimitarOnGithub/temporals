@@ -1,7 +1,7 @@
 import pytest
 from sys import version_info
 from datetime import time, date, datetime
-from periods.utils import get_datetime, _test_pattern, _test_defaults, _convert_to_type, convert_to_datetime
+from temporals.utils import get_datetime, _test_pattern, _test_defaults, _convert_to_type, convert_to_datetime
 
 
 class TestUtils:

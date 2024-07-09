@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "temporals"
+version = "0.0.1"
+authors = [
+    {name = "Dimitar Ivanov", email = "dimitarxivanov@gmail.com"},
+]
+description = "Python library providing time, date and datetime periods support"
+readme = "README.md"
+requires-python = ">=3.10"
+keywords = ["time", "date", "datetime", "period", "interval"]
+license = {text = "MIT"}
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities"
+]
+
+[project.urls]
+Homepage = "https://github.com/dimitarOnGithub/periods"
+Issues = "https://github.com/dimitarOnGithub/periods/issues"
+Documentation = "https://github.com/dimitarOnGithub/periods/wiki"
