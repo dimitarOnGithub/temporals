@@ -30,7 +30,7 @@ class Period:
         raise NotImplemented(f'Period class does not contain __lt__ method, inheriting classes must override it')
 
     def __repr__(self):
-        return f"{self.__class__.__name__}(start={self.start.__repr__()}, {self.end.__repr__()})"
+        return f"{self.__class__.__name__}(start={self.start.__repr__()}, end={self.end.__repr__()})"
 
     def __str__(self):
         return f'{self.start}/{self.end}'
@@ -46,14 +46,23 @@ class TimePeriod(Period):
                  start: time,
                  end: time,
                  **kwargs):
+        if not isinstance(start, time):
+            raise ValueError(f"Provided value '{start}' for parameter 'start' is not an instance of time")
+        if not isinstance(end, time):
+            raise ValueError(f"Provided value '{end}' for parameter 'end' is not an instance of time")
         super().__init__(start, end)
 
     def __eq__(self, other):
         """ Equality can only be determined between instances of this class, as well as the DatetimePeriod class, since
         only these two classes contain information about the actual time in a day. In both cases, the instances will
-        be tested for equal start and end times.
+        be tested for exactly equal start and end times.
 
-        # TODO: more docs when extra methods
+        This method does not account for overlaps between the start and end times of the periods, to get this
+        functionality, look at the following methods:
+            overlaps_with
+            overlapped_by
+            get_overlap
+            get_disconnect
         """
         if isinstance(other, DatetimePeriod):
             return (self.start == other.start.time()
@@ -97,13 +106,13 @@ class TimePeriod(Period):
             """ Only return True if the start and end times of `item` are within the actual time duration of this 
             period.
             """
-            return item.start > self.start and item.end < self.end
+            return self.start <= item.start and item.end <= self.end
         if isinstance(item, DatetimePeriod):
-            return item.start.time() > self.start and item.end.time() < self.end
+            return item.start.time() >= self.start and item.end.time() <= self.end
         if isinstance(item, datetime):
             item = item.time()
         if isinstance(item, time):
-            return self.start < item < self.end
+            return self.start <= item <= self.end
         return False
 
     def __lt__(self, other):
@@ -151,6 +160,7 @@ class TimePeriod(Period):
             other_end = other.end
         if isinstance(other, DatetimePeriod):
             other_start = other.start.time()
+            other_end = other.end.time()
         if other_start < self.start and other_end < self.end:
             return True
         return False
@@ -196,15 +206,101 @@ class TimePeriod(Period):
             return True
         return False
 
-    def overlap(self,
-                other: Union['TimePeriod', 'DatetimePeriod']
-                ) -> 'TimePeriod':
-        pass
+    def get_overlap(self,
+                    other: Union['TimePeriod', 'DatetimePeriod']
+                    ) -> Union['TimePeriod', None]:
+        """ Method returns the overlapping interval between the two periods as a new TimePeriod instance
 
-    def disconnect(self,
-                   other: Union['TimePeriod', 'DatetimePeriod']
-                   ) -> 'TimePeriod':
-        pass
+        >>> period1_start = time(8, 0, 0)
+        >>> period1_end = time(12, 0, 0)
+        >>> period1 = TimePeriod(start=period1_start, end=period1_end)
+        >>> period2_start = time(10, 0, 0)
+        >>> period2_end = time(13, 0, 0)
+        >>> period2 = TimePeriod(start=period2_start, end=period2_end)
+        >>> period1
+        TimePeriod(start=datetime.time(8, 0), end=datetime.time(12, 0))
+        >>> period2
+        TimePeriod(start=datetime.time(10, 0), end=datetime.time(13, 0))
+
+        On a timeline, the two periods can be illustrated as:
+           0800              Period 1                1200
+            |=========================================|
+                               |============================|
+                              1000       Period 2          1300
+
+        As expected, attempting a membership test would return False:
+        >>> period2 in period1
+        False
+        however, testing overlaps does return True:
+        >>> period1.overlapped_by(period2)
+        True
+        and the opposite:
+        >>> period2.overlaps_with(period1)
+        True
+
+        Therefore, we can use the `get_overlap` method to obtain the precise length of the overlapping interval:
+        >>> period1.get_overlap(period2)
+        TimePeriod(start=datetime.time(10, 0), end=datetime.time(12, 0))
+        And since the overlap is always the same, regardless of the observer, the opposite action would have the same
+        result:
+        >>> period2.get_overlap(period1)
+        TimePeriod(start=datetime.time(10, 0), end=datetime.time(12, 0))
+        """
+        if not isinstance(other, TimePeriod) or not isinstance(other, DatetimePeriod):
+            raise TypeError(f"Cannot perform temporal operations with instances of type '{type(other)}'")
+        if self.overlaps_with(other):
+            end_time = other.end if isinstance(other, TimePeriod) else other.end.time()
+            return TimePeriod(start=self.start, end=end_time)
+        elif self.overlapped_by(other):
+            start_time = other.start if isinstance(other, TimePeriod) else other.start.time()
+            return TimePeriod(start=start_time, end=self.end)
+
+    def get_disconnect(self,
+                       other: Union['TimePeriod', 'DatetimePeriod']
+                       ) -> Union['TimePeriod', None]:
+        """ Method returns the disconnect interval from the point of view of the invoking period. This means the time
+        disconnect from the start of this period until the start of the period to which this period is being compared
+        to. Since the span of time is relative to each of the two periods, this method will always return different
+        intervals.
+
+        Take, for example, the following two periods:
+        >>> period1_start = time(8, 0, 0)
+        >>> period1_end = time(12, 0, 0)
+        >>> period1 = TimePeriod(start=period1_start, end=period1_end)
+        >>> period2_start = time(10, 0, 0)
+        >>> period2_end = time(13, 0, 0)
+        >>> period2 = TimePeriod(start=period2_start, end=period2_end)
+        >>> period1
+        TimePeriod(start=datetime.time(8, 0), end=datetime.time(12, 0))
+        >>> period2
+        TimePeriod(start=datetime.time(10, 0), end=datetime.time(13, 0))
+
+        On a timeline, the two periods can be illustrated as:
+           0800              Period 1                1200
+            |=========================================|
+                               |============================|
+                              1000       Period 2          1300
+
+        From the point of view of Period 1, the disconnect between the two periods is between the time 0800 and 1000;
+        however, from the point of view of Period 2, the disconnect between them is between the time 1200 and 1300.
+
+        Therefore, if you want to obtain the amount of time when the periods do NOT overlap as relative to Period 1,
+        you should use:
+        >>> period1.get_disconnect(period2)
+        TimePeriod(start=datetime.time(8, 0), end=datetime.time(10, 0))
+
+        But if you want to obtain the same as relative to Period 2 instead:
+        >>> period2.get_disconnect(period1)
+        TimePeriod(start=datetime.time(12, 0), end=datetime.time(13, 0))
+        """
+        if not isinstance(other, TimePeriod) and not isinstance(other, DatetimePeriod):
+            raise TypeError(f"Cannot perform temporal operations with instances of type '{type(other)}'")
+        if self.overlapped_by(other):
+            end_time = other.start if isinstance(other, TimePeriod) else other.start.time()
+            return TimePeriod(start=self.start, end=end_time)
+        elif self.overlaps_with(other):
+            start_time = other.end if isinstance(other, TimePeriod) else other.end.time()
+            return TimePeriod(start=start_time, end=self.end)
 
 
 class DatePeriod(Period):
