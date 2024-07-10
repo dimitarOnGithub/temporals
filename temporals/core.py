@@ -135,8 +135,8 @@ class TimePeriod(Period):
 
         >>> this_start = time(10, 0, 0)
         >>> this_end = time(17, 0, 0)
-        >>> other_start = (8, 0, 0)
-        >>> other_end = (13, 0, 0)
+        >>> other_start = time(8, 0, 0)
+        >>> other_end = time(13, 0, 0)
         >>> this_period = TimePeriod(start=this_start, end=this_end)
         >>> other_period = TimePeriod(start=other_start, end=other_end)
         >>> this_period.overlaps_with(other_period)
@@ -177,8 +177,8 @@ class TimePeriod(Period):
 
         >>> this_start = time(10, 0, 0)
         >>> this_end = time(17, 0, 0)
-        >>> other_start = (15, 0, 0)
-        >>> other_end = (18, 0, 0)
+        >>> other_start = time(15, 0, 0)
+        >>> other_end = time(18, 0, 0)
         >>> this_period = TimePeriod(start=this_start, end=this_end)
         >>> other_period = TimePeriod(start=other_start, end=other_end)
         >>> this_period.overlapped_by(other_period)
@@ -246,7 +246,7 @@ class TimePeriod(Period):
         >>> period2.get_overlap(period1)
         TimePeriod(start=datetime.time(10, 0), end=datetime.time(12, 0))
         """
-        if not isinstance(other, TimePeriod) or not isinstance(other, DatetimePeriod):
+        if not isinstance(other, TimePeriod) and not isinstance(other, DatetimePeriod):
             raise TypeError(f"Cannot perform temporal operations with instances of type '{type(other)}'")
         if self.overlaps_with(other):
             end_time = other.end if isinstance(other, TimePeriod) else other.end.time()
@@ -305,8 +305,257 @@ class TimePeriod(Period):
 
 class DatePeriod(Period):
 
-    def __init__(self, start: date, end: date, **kwargs):
+    def __init__(self,
+                 start: date,
+                 end: date,
+                 **kwargs):
+        if not isinstance(start, date):
+            raise ValueError(f"Provided value '{start}' for parameter 'start' is not an instance of datetime.date")
+        if not isinstance(end, date):
+            raise ValueError(f"Provided value '{end}' for parameter 'end' is not an instance of datetime.date")
         super().__init__(start, end)
+
+    def __eq__(self, other):
+        """ Equality can only be determined between instances of this class, as well as the DatetimePeriod class, since
+        only these two classes contain information about the actual date. In both cases, the instances will be tested
+        for exactly equal start and end dates.
+
+        This method does not account for overlaps between the start and end dates of the periods, to get this
+        functionality, look at the following methods:
+            overlaps_with
+            overlapped_by
+            get_overlap
+            get_disconnect
+        """
+        if isinstance(other, DatetimePeriod):
+            return (self.start == other.start.date()
+                    and self.end == other.end.date())
+        if isinstance(other, DatePeriod):
+            return (self.start == other.start
+                    and self.end == other.end)
+        return False
+
+    def __contains__(self, item):
+        """ Membership test can be done with instances of this class, the DatetimePeriod class, datetime.datetime and
+        datetime.date objects; When membership test is done for a period, it assumes that the request is to check if
+        the tested period exists WITHIN the temporal borders of this period, that is to say, whether the start and
+        end date of the other period are after and before, respectively, of the same of this period.
+
+        2024-01-01 Your period:        2024-03-01
+        |==================================|
+                |=============|     <---- The period you are testing
+           2024-02-01     2024-02-10
+
+        If you have an instance of this period, for example:
+        >>> start = date(2024, 7, 1)  # 1st of July 2024
+        >>> end = date(2024, 9, 1)  # 1st of September 2024
+        >>> holiday = DatePeriod(start=start, end=end)
+
+        and then another DatePeriod:
+        >>> departure = date(2024, 7, 10)  # 10th of July 2024
+        >>> arrival = date(2024, 7, 20)  # 20th of July 2024
+        >>> paris_visit = DatePeriod(start=departure, end=arrival)
+
+        Then you can check if the lunch_break period is within your workday period:
+        >>> paris_visit in holiday
+
+        For more in-depth comparisons and functionality, see:
+            overlaps_with
+            overlapped_by
+            get_overlap
+            get_disconnect
+        """
+        if isinstance(item, DatePeriod):
+            """ Only return True if the start and end times of `item` are within the actual time duration of this 
+            period.
+            """
+            return self.start <= item.start and item.end <= self.end
+        if isinstance(item, DatetimePeriod):
+            return item.start.date() >= self.start and item.end.date() <= self.end
+        if isinstance(item, datetime):
+            item = item.date()
+        if isinstance(item, date):
+            return self.start <= item <= self.end
+        return False
+
+    def overlaps_with(self,
+                      other: Union['DatePeriod', 'DatetimePeriod']
+                      ) -> bool:
+        """ Test if this period overlaps with another period that has begun before this one. This check will evaluate
+        as True in the following scenario:
+                    2024-02-01      This period:      2024-03-01
+                        |==================================|
+                 |=============|   <------ The other period
+            2024-01-15    2024-02-05
+
+        >>> this_start = date(2024, 2, 1)  # 2nd of Feb 2024
+        >>> this_end = date(2024, 3, 1)  # 1st of Mar 2024
+        >>> other_start = date(2024, 1, 15)  # 15th of Jan 2024
+        >>> other_end = date(2024, 2, 5)  # 5th of Feb 2024
+        >>> this_period = DatePeriod(start=this_start, end=this_end)
+        >>> other_period = DatePeriod(start=other_start, end=other_end)
+        >>> this_period.overlaps_with(other_period)
+        True
+
+        The period that has begun first is considered the "main" period, even if it finishes before the end of this
+        period, since it occupies an earlier point in time. Therefore, the current period, which has begun at a later
+        point in time, is considered to be the overlapping one. Hence, the opposite check (overlapped_by) is True for
+        the other_period:
+        >>> other_period.overlapped_by(this_period)
+        True
+
+        Note that both of these checks will only work for partially overlapping periods - for fully overlapping periods,
+        use the `in` membership test:
+        >>> this_period in other_period
+        """
+        other_start: date = None
+        other_end: date = None
+        if isinstance(other, DatePeriod):
+            other_start = other.start
+            other_end = other.end
+        if isinstance(other, DatetimePeriod):
+            other_start = other.start.date()
+            other_end = other.end.date()
+        if other_start < self.start and other_end < self.end:
+            return True
+        return False
+
+    def overlapped_by(self,
+                      other: Union['DatePeriod', 'DatetimePeriod']
+                      ) -> bool:
+        """ Test if this period is overlapped by the other period. This check will evaluate True in the following
+        scenario:
+           2024-01-01      This period:      2024-01-31
+                |==================================|
+                                            |=============|   <------ The other period
+                                        2024-01-20    2024-03-10
+
+        >>> this_start = date(2024, 1, 1)
+        >>> this_end = date(2024, 1, 31)
+        >>> other_start = date(2024, 1, 20)
+        >>> other_end = date(2024, 3, 10)
+        >>> this_period = DatePeriod(start=this_start, end=this_end)
+        >>> other_period = DatePeriod(start=other_start, end=other_end)
+        >>> this_period.overlapped_by(other_period)
+        True
+
+        Since this period has begun first, it is considered the "main" one, and all other periods that begin after this
+        one, are considered to be overlapping it. Therefore, the opposite check, `overlaps_with`, will evaluate True
+        if the opposite check is being made:
+        >>> other_period.overlaps_with(this_period)
+        True
+
+        Note that both of these checks will only work for partially overlapping periods - for fully overlapping periods,
+        use the `in` membership test:
+        >>> this_period in other_period
+        """
+        other_start: date = None
+        other_end: date = None
+        if isinstance(other, DatePeriod):
+            other_start = other.start
+            other_end = other.end
+        if isinstance(other, DatetimePeriod):
+            other_start = other.start.date()
+            other_end = other.end.date()
+        if self.start < other_start and self.end < other_end:
+            return True
+        return False
+
+    def get_overlap(self,
+                    other: Union['DatePeriod', 'DatetimePeriod']
+                    ) -> Union['DatePeriod', None]:
+        """ Method returns the overlapping interval between the two periods as a new DatePeriod instance
+
+        >>> period1_start = date(2024, 1, 1)
+        >>> period1_end = date(2024, 1, 10)
+        >>> period1 = DatePeriod(start=period1_start, end=period1_end)
+        >>> period2_start = date(2024, 1, 5)
+        >>> period2_end = date(2024, 1, 15)
+        >>> period2 = DatePeriod(start=period2_start, end=period2_end)
+        >>> period1
+        DatePeriod(start=datetime.date(2024, 1, 1), end=datetime.date(2024, 1, 10))
+        >>> period2
+        DatePeriod(start=datetime.date(2024, 1, 5), end=datetime.date(2024, 1, 15))
+
+        On a timeline, the two periods can be illustrated as:
+        2024-01-01      Period 1                2024-01-10
+            |=========================================|
+                               |============================================|
+                         2024-01-05             Period 2              2024-01-15
+
+        As expected, attempting a membership test would return False:
+        >>> period2 in period1
+        False
+        however, testing overlaps does return True:
+        >>> period1.overlapped_by(period2)
+        True
+        and the opposite:
+        >>> period2.overlaps_with(period1)
+        True
+
+        Therefore, we can use the `get_overlap` method to obtain the precise length of the overlapping interval:
+        >>> period1.get_overlap(period2)
+        TimePeriod(start=datetime.time(10, 0), end=datetime.time(12, 0))
+        And since the overlap is always the same, regardless of the observer, the opposite action would have the same
+        result:
+        >>> period2.get_overlap(period1)
+        TimePeriod(start=datetime.time(10, 0), end=datetime.time(12, 0))
+        """
+        if not isinstance(other, DatePeriod) and not isinstance(other, DatetimePeriod):
+            raise TypeError(f"Cannot perform temporal operations with instances of type '{type(other)}'")
+        if self.overlaps_with(other):
+            end_date = other.end if isinstance(other, DatePeriod) else other.end.date()
+            return DatePeriod(start=self.start, end=end_date)
+        elif self.overlapped_by(other):
+            start_date = other.start if isinstance(other, DatePeriod) else other.start.date()
+            return DatePeriod(start=start_date, end=self.end)
+
+    def get_disconnect(self,
+                       other: Union['DatePeriod', 'DatetimePeriod']
+                       ) -> Union['DatePeriod', None]:
+        """ Method returns the disconnect interval from the point of view of the invoking period. This means the time
+        disconnect from the start of this period until the start of the period to which this period is being compared
+        to. Since the span of time is relative to each of the two periods, this method will always return different
+        intervals.
+
+        Take, for example, the following two periods:
+        >>> period1_start = date(2024, 1, 1)
+        >>> period1_end = date(2024, 1, 10)
+        >>> period1 = DatePeriod(start=period1_start, end=period1_end)
+        >>> period2_start = date(2024, 1, 5)
+        >>> period2_end = date(2024, 1, 15)
+        >>> period2 = DatePeriod(start=period2_start, end=period2_end)
+        >>> period1
+        DatePeriod(start=datetime.date(2024, 1, 1), end=datetime.date(2024, 1, 10))
+        >>> period2
+        DatePeriod(start=datetime.date(2024, 1, 5), end=datetime.date(2024, 1, 15))
+
+        On a timeline, the two periods can be illustrated as:
+        2024-01-01      Period 1                2024-01-10
+            |=========================================|
+                               |============================================|
+                         2024-01-05             Period 2              2024-01-15
+
+        From the point of view of Period 1, the disconnect between the two periods is between the 1st and the 5th;
+        however, from the point of view of Period 2, the disconnect between them is between the 10th and the 15th.
+
+        Therefore, if you want to obtain the amount of time when the periods do NOT overlap as relative to Period 1,
+        you should use:
+        >>> period1.get_disconnect(period2)
+        DatePeriod(start=datetime.date(2024, 1, 1), end=datetime.date(2024, 1, 5))
+
+        But if you want to obtain the same as relative to Period 2 instead:
+        >>> period2.get_disconnect(period1)
+        DatePeriod(start=datetime.date(2024, 1, 10), end=datetime.date(2024, 1, 15))
+        """
+        if not isinstance(other, DatePeriod) and not isinstance(other, DatetimePeriod):
+            raise TypeError(f"Cannot perform temporal operations with instances of type '{type(other)}'")
+        if self.overlapped_by(other):
+            end_date = other.start if isinstance(other, DatePeriod) else other.start.date()
+            return DatePeriod(start=self.start, end=end_date)
+        elif self.overlaps_with(other):
+            start_date = other.end if isinstance(other, DatePeriod) else other.end.date()
+            return DatePeriod(start=start_date, end=self.end)
 
 
 class DatetimePeriod(Period):
