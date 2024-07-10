@@ -309,9 +309,9 @@ class DatePeriod(Period):
                  start: date,
                  end: date,
                  **kwargs):
-        if not isinstance(start, date):
+        if not isinstance(start, date) or isinstance(start, datetime):
             raise ValueError(f"Provided value '{start}' for parameter 'start' is not an instance of datetime.date")
-        if not isinstance(end, date):
+        if not isinstance(end, date) or isinstance(end, datetime):
             raise ValueError(f"Provided value '{end}' for parameter 'end' is not an instance of datetime.date")
         super().__init__(start, end)
 
