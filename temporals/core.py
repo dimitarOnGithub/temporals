@@ -1,6 +1,7 @@
 from datetime import time, date, datetime, timedelta, tzinfo
 from typing import Union
 from zoneinfo import ZoneInfo
+from .exceptions import TimeAmbiguityError
 
 
 class Period:
@@ -33,7 +34,7 @@ class Period:
         return f"{self.__class__.__name__}(start={self.start.__repr__()}, end={self.end.__repr__()})"
 
     def __str__(self):
-        return f'{self.start}/{self.end}'
+        return f'{self.start.isoformat()}/{self.end.isoformat()}'
 
 
 class TimePeriod(Period):
@@ -161,7 +162,7 @@ class TimePeriod(Period):
         if isinstance(other, DatetimePeriod):
             other_start = other.start.time()
             other_end = other.end.time()
-        if other_start < self.start and other_end < self.end:
+        if not other_end < self.start and other_start < self.start and other_end < self.end:
             return True
         return False
 
@@ -304,6 +305,10 @@ class TimePeriod(Period):
 
 
 class DatePeriod(Period):
+    """ The DatePeriod class is responsible for date periods containing a year, month and day. Instances of this class
+    offer the 'equal' comparison (see __eq__ below), as well as the membership (is, is not) test operators
+    (see __contains__) below.
+    """
 
     def __init__(self,
                  start: date,
@@ -560,8 +565,134 @@ class DatePeriod(Period):
 
 class DatetimePeriod(Period):
 
-    def __init__(self, start, end, **kwargs):
+    def __init__(self,
+                 start: datetime,
+                 end: datetime,
+                 **kwargs):
+        if not isinstance(start, datetime):
+            raise ValueError(f"Provided value '{start}' for parameter 'start' is not an instance of "
+                             f"datetime.datetime")
+        if not isinstance(end, datetime):
+            raise ValueError(f"Provided value '{end}' for parameter 'end' is not an instance of "
+                             f"datetime.datetime")
         super().__init__(start, end)
+
+    def __eq__(self, other):
+        """ Equality can be determined between this class and any other of the Period classes, since this class contains
+        the most complete information of a period in time.
+
+        For instances of TimePeriod, equality will be measured in terms of hours;
+        For instances of DatePeriod, equality will be measured in terms of dates;
+        For instances of this class, equality will be measured for both.
+
+        This method does not account for overlaps between the start and end times and/or dates of the periods, to get
+        this functionality, look at the following methods:
+            overlaps_with
+            overlapped_by
+            get_overlap
+            get_disconnect
+        """
+        if isinstance(other, DatetimePeriod):
+            return (self.start == other.start
+                    and self.end == other.end)
+        if isinstance(other, DatePeriod):
+            return (self.start.date() == other.start
+                    and self.end.date() == other.end)
+        if isinstance(other, TimePeriod):
+            return (self.start.time() == other.start
+                    and self.end.time() == other.end)
+        return False
+
+    def __contains__(self, item):
+        """ Membership test can be done with instances of this class, the DatePeriod and TimePeriod classes,
+        datetime.datetime and datetime.date objects; When membership test is done for a period, it assumes that the
+        request is to check if the tested period exists WITHIN the temporal borders of this period, that is to say,
+        whether the start and end time and/or date of the other period are after and before, respectively, of the same
+        of this period.
+
+        2024-01-01 08:00 Your period: 2024-03-01 08:00
+            |==================================|
+                    |=============|     <---- The period you are testing
+        2024-02-01 08:00   2024-02-15 08:00
+
+        If you have an instance of this period, for example:
+        >>> start = datetime(2024, 1, 1, 8, 0)  # 0800, 1st of Jan 2024
+        >>> end = datetime(2024, 3, 1, 8, 0)  # 0800, 1st of Mar 2024
+        >>> quarter = DatetimePeriod(start=start, end=end)
+
+        and then another DatetimePeriod:
+        >>> pto_start = datetime(2024, 2, 1, 8, 0)  # 0800, 1st of Feb 2024
+        >>> pto_end = datetime(2024, 2, 15, 8, 0)  # 0800, 15th of Feb 2024
+        >>> pto = DatetimePeriod(start=pto_start, end=pto_end)
+
+        Then you can check if the pto period is within your quarter period:
+        >>> pto in quarter
+
+        TODO: Docs on time comparison
+
+        For more in-depth comparisons and functionality, see:
+            overlaps_with
+            overlapped_by
+            get_overlap
+            get_disconnect
+
+        Raises:
+            TimeAmbiguityError - raised if the duration of this period is longer than a day and either a TimePeriod is
+                tested, or an instance of datetime.time that falls within the start and end of this period. Also see:
+                <url to doc>
+                for more information.
+        """
+        if isinstance(item, DatetimePeriod):
+            return self.start <= item.start and item.end <= self.end
+        if isinstance(item, DatePeriod):
+            return self.start.date() <= item.start and item.end <= self.end.date()
+        if isinstance(item, TimePeriod):
+            # If the length of this period is over 1 day (24 hours), the provided TimePeriod will exist within this
+            # period multiple times
+            if self.duration.days > 1:
+                raise TimeAmbiguityError(f"Multiple instances of the provided TimePeriod '{item}' exist within "
+                                         f"this ('{self}') DatetimePeriod. For more information on this error, "
+                                         f"see <link to doc>")
+            if self.duration.days == 1:
+                if self.start.time() <= item.start and item.end <= self.end.time():
+                    # The other period starts at the same time or later and ends either before or at the same time as
+                    # this one - it will exist twice within it
+                    raise TimeAmbiguityError(f"Multiple instances of the provided TimePeriod '{item}' exist "
+                                             f"within this ('{self}') DatetimePeriod. For more information on this "
+                                             f"error, see <link to doc>")
+                if item.start < self.start.time():
+                    if item.end <= self.end.time():
+                        # Period starts before this once but ends before or at the same time as this once, hence
+                        # existing only once
+                        return True
+                    else:
+                        # Period never fully exists within this one as it starts before it and ends after it
+                        return False
+                if item.start >= self.start.time():
+                    if self.end.time() < item.end:
+                        # Starts equal or later but ends later too - existing only once
+                        return True
+            return self.start.time() <= item.start and item.end <= self.end.time()
+        if isinstance(item, datetime):
+            return self.start <= item <= self.end
+        if isinstance(item, date):
+            return self.start.date() <= item <= self.end.date()
+        if isinstance(item, time):
+            if self.duration.days == 1:
+                if self.start.time() <= item <= self.end.time():
+                    # See <doc> for more info
+                    raise TimeAmbiguityError(f"Multiple instances of the provided unit of time '{item}' exist within "
+                                             f"this ('{self}') DatetimePeriod. For more information on this error, "
+                                             f"see <link to doc>")
+                # If the length of this period is not more than 24 hours and the provided time is before or after the
+                # end of the period, this is always True since there's just one instance of that time in the period
+                return True
+            elif self.duration.days > 1:
+                raise TimeAmbiguityError(f"Multiple instances of the provided unit of time '{item}' exist within "
+                                         f"this ('{self}') DatetimePeriod. For more information on this error, "
+                                         f"see <link to doc>")
+            return self.start.time() <= item <= self.end.time()
+        return False
 
 
 class Duration:
