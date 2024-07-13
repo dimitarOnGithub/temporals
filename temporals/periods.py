@@ -577,6 +577,25 @@ class DatetimePeriod(Period):
                              f"datetime.datetime")
         super().__init__(start, end)
 
+    def _time_repeats(self,
+                      _t: time | TimePeriod) -> bool:
+        """ TODO: Docs """
+        if isinstance(_t, time):
+            if self.duration.days >= 2:
+                return True
+            elif self.duration.days == 1:
+                if self.start.time() <= _t <= self.end.time():
+                    return True
+        if isinstance(_t, TimePeriod):
+            if self.duration.days > 2:
+                return True
+            elif self.duration.days >= 1:
+                if self.start.time() <= _t.start and _t.end <= self.end.time():
+                    # The other period starts at the same time or later and ends either before or at the same time as
+                    # this one - it will exist twice within it
+                    return True
+        return False
+
     def __eq__(self, other):
         """ Equality can be determined between this class and any other of the Period classes, since this class contains
         the most complete information of a period in time.
@@ -647,19 +666,11 @@ class DatetimePeriod(Period):
         if isinstance(item, DatePeriod):
             return self.start.date() <= item.start and item.end <= self.end.date()
         if isinstance(item, TimePeriod):
-            # If the length of this period is over 1 day (24 hours), the provided TimePeriod will exist within this
-            # period multiple times
-            if self.duration.days > 1:
-                raise TimeAmbiguityError(f"Multiple instances of the provided TimePeriod '{item}' exist within "
-                                         f"this ('{self}') DatetimePeriod. For more information on this error, "
+            if self._time_repeats(item):
+                raise TimeAmbiguityError(f"The provided TimePeriod '{item}' exist within this DatetimePeriod "
+                                         f"('{self}') more than once. For more information on this error, "
                                          f"see <link to doc>")
             if self.duration.days == 1:
-                if self.start.time() <= item.start and item.end <= self.end.time():
-                    # The other period starts at the same time or later and ends either before or at the same time as
-                    # this one - it will exist twice within it
-                    raise TimeAmbiguityError(f"Multiple instances of the provided TimePeriod '{item}' exist "
-                                             f"within this ('{self}') DatetimePeriod. For more information on this "
-                                             f"error, see <link to doc>")
                 if item.start < self.start.time():
                     if item.end <= self.end.time():
                         # Period starts before this once but ends before or at the same time as this once, hence
@@ -678,19 +689,12 @@ class DatetimePeriod(Period):
         if isinstance(item, date):
             return self.start.date() <= item <= self.end.date()
         if isinstance(item, time):
-            if self.duration.days == 1:
-                if self.start.time() <= item <= self.end.time():
-                    # See <doc> for more info
-                    raise TimeAmbiguityError(f"Multiple instances of the provided unit of time '{item}' exist within "
-                                             f"this ('{self}') DatetimePeriod. For more information on this error, "
-                                             f"see <link to doc>")
-                # If the length of this period is not more than 24 hours and the provided time is before or after the
-                # end of the period, this is always True since there's just one instance of that time in the period
-                return True
-            elif self.duration.days > 1:
-                raise TimeAmbiguityError(f"Multiple instances of the provided unit of time '{item}' exist within "
-                                         f"this ('{self}') DatetimePeriod. For more information on this error, "
+            if self._time_repeats(item):
+                raise TimeAmbiguityError(f"The provided unit of time ('{item}') exist within this DatetimePeriod "
+                                         f"('{self}')  more than once. For more information on this error, "
                                          f"see <link to doc>")
+            if self.duration.days == 1:
+                return True
             return self.start.time() <= item <= self.end.time()
         return False
 

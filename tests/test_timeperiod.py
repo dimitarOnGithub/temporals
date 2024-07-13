@@ -1,6 +1,6 @@
 import pytest
 from datetime import time, date, datetime
-from temporals.core import TimePeriod, DatetimePeriod
+from temporals.periods import TimePeriod, DatetimePeriod
 
 
 class TestTimePeriod:

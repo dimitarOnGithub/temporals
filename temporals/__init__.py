@@ -1,6 +1,6 @@
 from datetime import time, date, datetime, timezone
 from .utils import get_datetime
-from .core import DatePeriod, TimePeriod, DatetimePeriod
+from .periods import DatePeriod, TimePeriod, DatetimePeriod
 
 
 __all__ = [
