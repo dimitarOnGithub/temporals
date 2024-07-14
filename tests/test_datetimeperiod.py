@@ -47,11 +47,7 @@ class TestDatetimePeriod:
         self.end = datetime(2024, 1, 3, 11, 0)
         self.period = DatetimePeriod(start=self.start, end=self.end)
 
-        # TimePeriod that starts before it
-        self.period1 = TimePeriod(start=time(7, 0), end=time(10, 0))
-        assert self.period._time_repeats(self.period1) is False
-
-        # TimePeriod that ends after it
+        # TimePeriod that starts before it and ends after it
         self.period1 = TimePeriod(start=time(7, 0), end=time(12, 0))
         assert self.period._time_repeats(self.period1) is False
 
@@ -73,6 +69,12 @@ class TestDatetimePeriod:
 
         self.time = time(7, 0)
         assert self.period._time_repeats(self.time) is True
+        # TimePeriod that starts before it but also ends before it
+        self.period1 = TimePeriod(start=time(7, 0), end=time(10, 0))
+        assert self.period._time_repeats(self.period1) is True
+        # TimePeriod that starts after it but also ends after it
+        self.period1 = TimePeriod(start=time(9, 0), end=time(12, 0))
+        assert self.period._time_repeats(self.period1) is True
         # TimePeriod that starts and ends within it
         self.period1 = TimePeriod(start=time(9, 0), end=time(10, 0))
         assert self.period._time_repeats(self.period1) is True
@@ -172,4 +174,298 @@ class TestDatetimePeriod:
         assert self.time_period in self.period
 
     def test_invalid_membership(self):
-        pass
+        # Same day period
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 1, 12, 0)
+        self.period = DatetimePeriod(start=self.start, end=self.end)
+
+        # Time test
+        self.time = time(17, 0)
+        print(self.time in self.period)
+        assert self.time not in self.period
+
+        # Date test
+        self.date = date(2024, 1, 2)
+        assert self.date not in self.period
+
+        # Datetime test
+        self.datetime = datetime(2024, 1, 1, 13, 0)
+        assert self.datetime not in self.period
+
+        # Time period test - overlapping
+        self.time_period = TimePeriod(
+            start=time(9, 0),
+            end=time(14, 0)
+        )
+        assert self.time_period not in self.period
+
+    def test_overlaps_time(self):
+        """
+            Same day:
+
+           0800 Period 1         1200
+            |=====================|
+                                |===================|
+                              1100 Period 2        1700
+
+            Period 1 is overlapped by Period 2
+            Period 2 overlaps Period 1
+            Period 1 does not overlap Period 2
+            Period 2 is not overlapped by Period 1
+        """
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 1, 12, 0)
+        self.period = DatetimePeriod(start=self.start, end=self.end)
+
+        self.other_start = time(10, 0)
+        self.other_end = time(14, 0)
+        self.other_period = TimePeriod(start=self.other_start, end=self.other_end)
+
+        assert self.period.overlapped_by(self.other_period) is True
+        assert self.other_period.overlaps_with(self.period) is True
+        assert self.period.overlaps_with(self.other_period) is False
+        assert self.other_period.overlapped_by(self.period) is False
+
+    def test_overlaps_date(self):
+        """
+        2024-01-01 0800        Period 1         2024-01-03 1200
+            |=========================================|
+                                |===================================================|
+                            2024-01-02                   Period 2              2024-01-04
+
+            Period 1 is overlapped by Period 2
+            Period 2 overlaps Period 1
+            Period 1 does not overlap Period 2
+            Period 2 is not overlapped by Period 1
+        """
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 3, 12, 0)
+        self.period = DatetimePeriod(start=self.start, end=self.end)
+
+        self.other_start = date(2024, 1, 2)
+        self.other_end = date(2024, 1, 4)
+        self.other_period = DatePeriod(start=self.other_start, end=self.other_end)
+
+        assert self.period.overlapped_by(self.other_period) is True
+        assert self.other_period.overlaps_with(self.period) is True
+        assert self.period.overlaps_with(self.other_period) is False
+        assert self.other_period.overlapped_by(self.period) is False
+
+    def test_overlaps_datetime(self):
+        """
+            Same day:
+
+           0800 Period 1         1200
+            |=====================|
+                                |===================|
+                              1100 Period 2        1700
+
+            Period 1 is overlapped by Period 2
+            Period 2 overlaps Period 1
+            Period 1 does not overlap Period 2
+            Period 2 is not overlapped by Period 1
+        """
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 1, 12, 0)
+        self.period = DatetimePeriod(start=self.start, end=self.end)
+
+        self.other_start = datetime(2024, 1, 1, 11, 0)
+        self.other_end = datetime(2024, 1, 1, 17, 0)
+        self.other_period = DatetimePeriod(start=self.other_start, end=self.other_end)
+        assert self.period.overlapped_by(self.other_period) is True
+        assert self.other_period.overlaps_with(self.period) is True
+        assert self.period.overlaps_with(self.other_period) is False
+        assert self.other_period.overlapped_by(self.period) is False
+
+        """
+            Different day:
+
+            2024-01-01 0800 Period 1        2024-02-01 1200
+                    |==============================|
+                                        |===============================|
+                                    2024-01-15 0800 Period 2  2024-03-01 1200
+
+            Period 1 is overlapped by Period 2
+            Period 2 overlaps Period 1
+            Period 1 does not overlap Period 2
+            Period 2 is not overlapped by Period 1
+        """
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 2, 1, 12, 0)
+        self.period = DatetimePeriod(start=self.start, end=self.end)
+
+        self.other_start = datetime(2024, 1, 15, 11, 0)
+        self.other_end = datetime(2024, 3, 1, 12, 0)
+        self.other_period = DatetimePeriod(start=self.other_start, end=self.other_end)
+        assert self.period.overlapped_by(self.other_period) is True
+        assert self.other_period.overlaps_with(self.period) is True
+        assert self.period.overlaps_with(self.other_period) is False
+        assert self.other_period.overlapped_by(self.period) is False
+
+    def test_ambiguity_time(self):
+        """ All tests below must raise a TimeAmbiguityError """
+
+        # Membership ambiguity
+        """ 2 day long period
+                2024-01-01 0800                                         2024-01-02 1200
+                    /==========================================================/
+                       /=======/                                       /======/
+                    1000     1200                                   1000     1200
+        """
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 2, 12, 0)
+        self.period = DatetimePeriod(start=self.start, end=self.end)
+
+        self.time = time(9, 0)
+        with pytest.raises(TimeAmbiguityError):
+            self.time in self.period
+
+        """ 1 day long period 
+                2024-01-01 0800                                         2024-01-02 1200
+                    /==========================================================/
+                       /=======/                                       /======/
+                    1000     1200                                   1000     1200
+        """
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 2, 12, 0)
+        self.period = DatetimePeriod(start=self.start, end=self.end)
+
+        self.other_start = time(10, 0)
+        self.other_end = time(12, 0)
+        self.other_period = TimePeriod(start=self.other_start, end=self.other_end)
+
+        with pytest.raises(TimeAmbiguityError):
+            self.other_period in self.period
+
+        """ 2 days long period 
+                2024-01-01 0800                                         2024-01-02 1200
+                    /==========================================================/
+                /=======/                                              /======/
+              0700     1200                                          0700    1200
+        """
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 2, 12, 0)
+        self.period = DatetimePeriod(start=self.start, end=self.end)
+
+        self.other_start = time(10, 0)
+        self.other_end = time(12, 0)
+        self.other_period = TimePeriod(start=self.other_start, end=self.other_end)
+
+        with pytest.raises(TimeAmbiguityError):
+            self.other_period in self.period
+
+        # Overlaps with ambiguity
+        """ 2 days long period 
+                2024-01-01 0800                                         2024-01-02 1200
+                    /==========================================================/
+                /=========/                                              /=========/
+              0700       1200                                          0700      1400
+        """
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 3, 12, 0)
+        self.period = DatetimePeriod(start=self.start, end=self.end)
+
+        self.other_start = time(10, 0)
+        self.other_end = time(14, 0)
+        self.other_period = TimePeriod(start=self.other_start, end=self.other_end)
+
+        with pytest.raises(TimeAmbiguityError):
+            self.period.overlaps_with(self.other_period)
+
+        """ Overnight period 
+                2024-01-01 1000              Midnight                   2024-01-02 0800
+                    /==========================================================/
+                /=======/                                                   /======/
+              0700    1200                                                0700    1200
+        """
+        self.start = datetime(2024, 1, 1, 10, 0)
+        self.end = datetime(2024, 1, 2, 8, 0)
+        self.period = DatetimePeriod(start=self.start, end=self.end)
+
+        self.other_start = time(7, 0)
+        self.other_end = time(12, 0)
+        self.other_period = TimePeriod(start=self.other_start, end=self.other_end)
+
+        with pytest.raises(TimeAmbiguityError):
+            self.period.overlaps_with(self.other_period)
+
+        # Overlapped by ambiguity
+        """ 2 days long period 
+                2024-01-01 0800                                         2024-01-02 1200
+                    /==========================================================/
+                        /=========/                                        /=========/
+                      1000       1400                                    1000      1400
+        """
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 2, 12, 0)
+        self.period = DatetimePeriod(start=self.start, end=self.end)
+
+        self.other_start = time(10, 0)
+        self.other_end = time(14, 0)
+        self.other_period = TimePeriod(start=self.other_start, end=self.other_end)
+
+        with pytest.raises(TimeAmbiguityError):
+            self.period.overlapped_by(self.other_period)
+
+        """ Overnight period 
+                2024-01-01 0600                Midnight               2024-01-02 1000
+                    /==========================================================/
+                        /=========/                                        /=========/
+                      1000       1400                                    1000      1400
+        """
+        self.start = datetime(2024, 1, 1, 6, 0)
+        self.end = datetime(2024, 1, 2, 10, 0)
+        self.period = DatetimePeriod(start=self.start, end=self.end)
+
+        self.other_start = time(10, 0)
+        self.other_end = time(14, 0)
+        self.other_period = TimePeriod(start=self.other_start, end=self.other_end)
+
+        with pytest.raises(TimeAmbiguityError):
+            self.period.overlapped_by(self.other_period)
+
+    def test_get_overlap(self):
+        # Same day period
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 1, 12, 0)
+        self.period = DatetimePeriod(start=self.start, end=self.end)
+
+        # Time period test
+        self.time_period = TimePeriod(
+            start=time(9, 0),
+            end=time(13, 0)
+        )
+        self.overlap = self.period.get_overlap(self.time_period)
+        assert self.overlap == TimePeriod(start=time(9, 0), end=time(12, 0))
+        # TODO: re-do this once the get_overlap method for TimePeriod has been refactored
+        self.other_overlap = self.time_period.get_overlap(self.period)
+        assert self.other_overlap == TimePeriod(start=time(9, 0), end=time(12, 0))
+
+        # 2 day period
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 3, 12, 0)
+        self.period = DatetimePeriod(start=self.start, end=self.end)
+
+        # Date period test
+        self.date_period = DatePeriod(
+            start=date(2024, 1, 2),
+            end=date(2024, 1, 4)
+        )
+        self.overlap = self.period.get_overlap(self.date_period)
+        assert self.overlap == DatePeriod(start=date(2024, 1, 2),
+                                          end=date(2024, 1, 3))
+
+        # Datetime period test
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 3, 12, 0)
+        self.period = DatetimePeriod(start=self.start, end=self.end)
+
+        self.dt_period = DatetimePeriod(
+            start=datetime(2024, 1, 2, 10, 0),
+            end=datetime(2024, 1, 4, 8, 0)
+        )
+        self.overlap = self.period.get_overlap(self.date_period)
+        assert self.overlap == DatetimePeriod(
+            start=datetime(2024, 1, 2, 10, 0),
+            end=datetime(2024, 1, 3, 12, 0)
+        )

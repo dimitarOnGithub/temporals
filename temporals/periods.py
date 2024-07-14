@@ -249,6 +249,9 @@ class TimePeriod(Period):
         """
         if not isinstance(other, TimePeriod) and not isinstance(other, DatetimePeriod):
             raise TypeError(f"Cannot perform temporal operations with instances of type '{type(other)}'")
+        if isinstance(other, DatetimePeriod):
+            return other.get_overlap(self)
+        # TODO: refactor this
         if self.overlaps_with(other):
             end_time = other.end if isinstance(other, TimePeriod) else other.end.time()
             return TimePeriod(start=self.start, end=end_time)
@@ -588,8 +591,15 @@ class DatetimePeriod(Period):
                     return True
         if isinstance(_t, TimePeriod):
             if self.duration.days > 2:
+                # No situation in which the period won't repeat when the period is over 2 days long
                 return True
-            elif self.duration.days >= 1:
+            if self.duration.days == 2:
+                # If the period is 2 days long, the TimePeriod must start before it and end after it in order not to
+                # repeat, otherwise, it will repeat
+                if _t.start >= self.start.time() or _t.end <= self.end.time():
+                    return True
+            elif self.duration.days == 1:
+                # If the period is (at least) 1 day long, it must either start before it or end after it not to repeat
                 if self.start.time() <= _t.start and _t.end <= self.end.time():
                     # The other period starts at the same time or later and ends either before or at the same time as
                     # this one - it will exist twice within it
@@ -697,6 +707,174 @@ class DatetimePeriod(Period):
                 return True
             return self.start.time() <= item <= self.end.time()
         return False
+
+    def overlaps_with(self,
+                      other: Union['TimePeriod', 'DatePeriod', 'DatetimePeriod']
+                      ) -> bool:
+        """ Test if this period overlaps with another period that has begun before this one. This check will evaluate
+        as True in the following scenario:
+                    2024-02-01 0800  This period:   2024-03-01 1700
+                            |==================================|
+                     |============================|   <------ The other period
+            2024-02-01 0600             2024-02-01 1300
+
+        >>> this_start = datetime(2024, 2, 1, 8, 0)  # 0800, 2nd of Feb 2024
+        >>> this_end = datetime(2024, 2, 1, 17, 0)  # 1700, 2nd of Feb 2024
+        >>> other_start = datetime(2024, 2, 1, 6, 0)  # 0600, 2nd of Feb 2024
+        >>> other_end = datetime(2024, 2, 1, 13, 0)  # 1300, 2nd of Feb 2024
+        >>> this_period = DatetimePeriod(start=this_start, end=this_end)
+        >>> other_period = DatetimePeriod(start=other_start, end=other_end)
+        >>> this_period.overlaps_with(other_period)
+        True
+
+        The period that has begun first is considered the "main" period, even if it finishes before the end of this
+        period, since it occupies an earlier point in time. Therefore, the current period, which has begun at a later
+        point in time, is considered to be the overlapping one. Hence, the opposite check (overlapped_by) is True for
+        the other_period:
+        >>> other_period.overlapped_by(this_period)
+        True
+
+        Note that both of these checks will only work for partially overlapping periods - for fully overlapping periods,
+        use the `in` membership test:
+        >>> this_period in other_period
+        """
+        if isinstance(other, TimePeriod):
+            if self._time_repeats(other):
+                raise TimeAmbiguityError(f"The provided TimePeriod '{other}' exist within this DatetimePeriod "
+                                         f"('{self}') more than once. For more information on this error, "
+                                         f"see <link to doc>")
+            if self.start.date() < self.end.date():
+                # Day stretches overnight - the start time must be before the start of this period but also after the
+                # end of it
+                if other.start < self.start.time() and other.start < self.end.time():
+                    raise TimeAmbiguityError(f"The provided TimePeriod ('{other}') is ambiguous compared to this "
+                                             f"DatetimePeriod ('{self}'); it's overlapped by (starts before) this "
+                                             f"period on {self.start.date().isoformat()} but this period continues "
+                                             f"until after it's start on {self.end.date().isoformat()}")
+                else:
+                    return other.start <= self.start.time()
+            else:
+                return other.start < self.start.time() and other.end < self.end.time()
+        if isinstance(other, DatePeriod):
+            return other.start < self.start.date() and other.end < self.end.date()
+        if isinstance(other, DatetimePeriod):
+            return other.start < self.start and other.end < self.end
+        return False
+
+    def overlapped_by(self,
+                      other: Union['TimePeriod', 'DatePeriod', 'DatetimePeriod']
+                      ) -> bool:
+        """ Test if this period is overlapped by the other period. This check will evaluate True in the following
+        scenario:
+        2024-01-01 0800   This period:  2024-01-01 1700
+                |==================================|
+                        |=====================================|   <------ The other period
+                2024-01-01 1200                    2024-01-01 2300
+
+        >>> this_start = datetime(2024, 1, 1, 8, 0)  # 0800, 1st of Jan 2024
+        >>> this_end = datetime(2024, 1, 1, 17, 0)  # 1700, 1st of Jan 2024
+        >>> other_start = datetime(2024, 1, 1, 12, 0)  # 1200, 1st of Jan 2024
+        >>> other_end = datetime(2024, 1, 1, 23, 0)  # 2300, 1st of Jan 2024
+        >>> this_period = DatePeriod(start=this_start, end=this_end)
+        >>> other_period = DatePeriod(start=other_start, end=other_end)
+        >>> this_period.overlapped_by(other_period)
+        True
+
+        Since this period has begun first, it is considered the "main" one, and all other periods that begin after this
+        one, are considered to be overlapping it. Therefore, the opposite check, `overlaps_with`, will evaluate True
+        if the opposite check is being made:
+        >>> other_period.overlaps_with(this_period)
+        True
+
+        Note that both of these checks will only work for partially overlapping periods - for fully overlapping periods,
+        use the `in` membership test:
+        >>> this_period in other_period
+        """
+        if isinstance(other, TimePeriod):
+            if self._time_repeats(other):
+                raise TimeAmbiguityError(f"The provided TimePeriod '{other}' exist within this DatetimePeriod "
+                                         f"('{self}') more than once. For more information on this error, "
+                                         f"see <link to doc>")
+            if self.start.date() < self.end.date():
+                # Day stretches overnight - the start time must be after the start of this period but also after the
+                # end of it
+                if self.start.time() < other.start and self.end.time() < other.end:
+                    raise TimeAmbiguityError(f"The provided TimePeriod ('{other}') is ambiguous compared to this "
+                                             f"DatetimePeriod ('{self}'); it overlaps with (starts after) this "
+                                             f"period on {self.start.date().isoformat()} but this period continues "
+                                             f"until after it's start on {self.end.date().isoformat()}")
+                else:
+                    return self.start.time() <= other.start
+            else:
+                return self.start.time() < other.start and self.end.time() < other.end
+        if isinstance(other, DatePeriod):
+            return self.start.date() < other.start and self.end.date() < other.end
+        if isinstance(other, DatetimePeriod):
+            return self.start < other.start and self.end < other.end
+        return False
+
+    def get_overlap(self,
+                    other: Union['TimePeriod', 'DatePeriod', 'DatetimePeriod']
+                    ) -> Union['TimePeriod', 'DatePeriod', 'DatetimePeriod', None]:
+        """ Method returns the overlapping interval between the two periods as a new period instance. Returned object
+        will be an instance of the class that's being tested.
+
+        >>> period1_start = datetime(2024, 1, 1, 8, 0, 0)
+        >>> period1_end = datetime(2024, 1, 1, 12, 0, 0)
+        >>> period1 = DatetimePeriod(start=period1_start, end=period1_end)
+        >>> period2_start = time(10, 0, 0)
+        >>> period2_end = time(13, 0, 0)
+        >>> period2 = TimePeriod(start=period2_start, end=period2_end)
+        >>> period1
+        DatetimePeriod(start=datetime.datetime(2024, 1, 1, 8, 0), end=datetime.datetime(2024, 1, 1, 12, 0))
+        >>> period2
+        TimePeriod(start=datetime.time(10, 0), end=datetime.time(13, 0))
+
+        On a timeline, the two periods can be illustrated as:
+           0800              Period 1                1200
+            |=========================================|
+                               |============================|
+                              1000       Period 2          1300
+
+        As expected, attempting a membership test would return False:
+        >>> period2 in period1
+        False
+        however, testing overlaps does return True:
+        >>> period1.overlapped_by(period2)
+        True
+        and the opposite:
+        >>> period2.overlaps_with(period1)
+        True
+
+        Therefore, we can use the `get_overlap` method to obtain the precise length of the overlapping interval:
+        >>> period1.get_overlap(period2)
+        TimePeriod(start=datetime.time(10, 0), end=datetime.time(12, 0))
+        And since the overlap is always the same, regardless of the observer, the opposite action would have the same
+        result:
+        >>> period2.get_overlap(period1)
+        TimePeriod(start=datetime.time(10, 0), end=datetime.time(12, 0))
+        """
+        if (not isinstance(other, TimePeriod)
+                and not isinstance(other, DatePeriod)
+                and not isinstance(other, DatetimePeriod)):
+            raise TypeError(f"Cannot perform temporal operations with instances of type '{type(other)}'")
+        period_to_use = None
+        _start = None
+        _end = None
+        if self.overlaps_with(other) or self.overlapped_by(other):
+            if isinstance(other, TimePeriod):
+                period_to_use = TimePeriod
+                _start = self.start.time() if self.overlaps_with(other) else other.start
+                _end = other.end if self.overlaps_with(other) else self.end.time()
+            elif isinstance(other, DatePeriod):
+                period_to_use = DatePeriod
+                _start = self.start.date() if self.overlaps_with(other) else other.start
+                _end = other.end if self.overlaps_with(other) else self.end.date()
+            else:
+                period_to_use = DatetimePeriod
+                _start = self.start if self.overlaps_with(other) else other.start
+                _end = other.end if self.overlaps_with(other) else self.end
+        return period_to_use(start=_start, end=_end)
 
 
 class Duration:
