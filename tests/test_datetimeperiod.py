@@ -479,3 +479,56 @@ class TestDatetimePeriod:
             start=datetime(2024, 1, 2, 10, 0),
             end=datetime(2024, 1, 3, 12, 0)
         )
+
+    def test_get_disconnect(self):
+        # Same day period
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 1, 12, 0)
+        self.period = DatetimePeriod(start=self.start, end=self.end)
+
+        # Time period test
+        self.time_period = TimePeriod(
+            start=time(9, 0),
+            end=time(13, 0)
+        )
+        self.dc = self.period.get_disconnect(self.time_period)
+        assert self.dc == TimePeriod(start=time(8, 0), end=time(9, 0))
+        self.other_dc = self.time_period.get_disconnect(self.period)
+        assert self.other_dc == TimePeriod(start=time(12, 0), end=time(13, 0))
+
+        # 2 day period
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 3, 12, 0)
+        self.period = DatetimePeriod(start=self.start, end=self.end)
+
+        # Date period test
+        self.date_period = DatePeriod(
+            start=date(2024, 1, 2),
+            end=date(2024, 1, 4)
+        )
+        self.dc = self.period.get_disconnect(self.date_period)
+        assert self.dc == DatePeriod(start=date(2024, 1, 1),
+                                     end=date(2024, 1, 2))
+        self.other_dc = self.date_period.get_disconnect(self.period)
+        assert self.other_dc == DatePeriod(start=date(2024, 1, 3),
+                                           end=date(2024, 1, 4))
+
+        # Datetime period test
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 3, 12, 0)
+        self.period = DatetimePeriod(start=self.start, end=self.end)
+
+        self.dt_period = DatetimePeriod(
+            start=datetime(2024, 1, 2, 10, 0),
+            end=datetime(2024, 1, 4, 8, 0)
+        )
+        self.dc = self.period.get_disconnect(self.date_period)
+        assert self.dc == DatetimePeriod(
+            start=datetime(2024, 1, 1, 8, 0),
+            end=datetime(2024, 1, 2, 10, 0)
+        )
+        self.other_dc = self.dt_period.get_disconnect(self.period)
+        assert self.other_dc == DatetimePeriod(
+            start=datetime(2024, 1, 3, 12, 0),
+            end=datetime(2024, 1, 4, 8, 0)
+        )

@@ -903,6 +903,78 @@ class DatetimePeriod(Period):
                 _end = other.end if self.overlaps_with(other) else self.end
         return period_to_use(start=_start, end=_end)
 
+    def get_disconnect(self,
+                       other: Union['TimePeriod', 'DatePeriod', 'DatetimePeriod']
+                       ) -> Union['TimePeriod', 'DatePeriod', 'DatetimePeriod', None]:
+        """ Method returns the disconnect interval from the point of view of the invoking period. This means the time
+        disconnect from the start of this period until the start of the period to which this period is being compared
+        to. Since the span of time is relative to each of the two periods, this method will always return different
+        intervals.
+
+        Take, for example, the following two periods:
+        >>> period1_start = datetime(2024, 1, 1, 8, 0, 0)
+        >>> period1_end = datetime(2024, 1, 1, 12, 0, 0)
+        >>> period1 = DatetimePeriod(start=period1_start, end=period1_end)
+        >>> period2_start = datetime(2024, 1, 1, 10, 0, 0)
+        >>> period2_end = datetime(2024, 1, 1, 13, 0, 0)
+        >>> period2 = DatetimePeriod(start=period2_start, end=period2_end)
+        >>> period1
+        DatetimePeriod(start=datetime.datetime(2024, 1, 1, 8, 0), end=datetime.datetime(2024, 1, 1, 12, 0))
+        >>> period2
+        DatetimePeriod(start=datetime.datetime(2024, 1, 1, 10, 0), end=datetime.datetime(2024, 1, 1, 13, 0))
+
+        On a timeline, the two periods can be illustrated as:
+           0800              Period 1                1200
+            |=========================================|
+                               |============================|
+                              1000       Period 2          1300
+
+        From the point of view of Period 1, the disconnect between the two periods is between the time 0800 and 1000;
+        however, from the point of view of Period 2, the disconnect between them is between the time 1200 and 1300.
+
+        Therefore, if you want to obtain the amount of time when the periods do NOT overlap as relative to Period 1,
+        you should use:
+        >>> period1.get_disconnect(period2)
+        DatetimePeriod(start=datetime.datetime(2024, 1, 1, 8, 0), end=datetime.datetime(2024, 1, 1, 10, 0))
+
+        But if you want to obtain the same as relative to Period 2 instead:
+        >>> period2.get_disconnect(period1)
+        DatetimePeriod(start=datetime.datetime(2024, 1, 1, 12, 0), end=datetime.datetime(2024, 1, 1, 13, 0))
+        """
+        if (not isinstance(other, TimePeriod)
+                and not isinstance(other, DatePeriod)
+                and not isinstance(other, DatetimePeriod)):
+            raise TypeError(f"Cannot perform temporal operations with instances of type '{type(other)}'")
+        period_to_use = None
+        _start = None
+        _end = None
+        if isinstance(other, TimePeriod):
+            period_to_use = TimePeriod
+            if self.overlapped_by(other):
+                _start = self.start.time()
+                _end = other.start
+            elif self.overlaps_with(other):
+                _start = other.end
+                _end = self.end.time()
+        elif isinstance(other, DatePeriod):
+            period_to_use = DatePeriod
+            if self.overlapped_by(other):
+                _start = self.start.date()
+                _end = other.start
+            elif self.overlaps_with(other):
+                _start = other.end
+                _end = self.end.date()
+        else:
+            period_to_use = DatetimePeriod
+            if self.overlapped_by(other):
+                _start = self.start
+                _end = other.start
+            elif self.overlaps_with(other):
+                _start = other.end
+                _end = self.end
+        if period_to_use and _start and _end:
+            return period_to_use(start=_start, end=_end)
+
 
 class Duration:
 
