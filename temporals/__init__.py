@@ -1,4 +1,4 @@
-from datetime import time, date, datetime, timezone
+from datetime import time, date, datetime
 from .utils import get_datetime
 from .periods import DatePeriod, TimePeriod, DatetimePeriod
 

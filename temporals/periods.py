@@ -1,6 +1,5 @@
-from datetime import time, date, datetime, timedelta, tzinfo
+from datetime import time, date, datetime, timedelta
 from typing import Union
-from zoneinfo import ZoneInfo
 from .exceptions import TimeAmbiguityError
 
 
@@ -8,9 +7,7 @@ class Period:
 
     def __init__(self,
                  start: time | date | datetime,
-                 end: time | date | datetime,
-                 zone_overwrite: ZoneInfo | str = None,
-                 inherit_zone: bool = False
+                 end: time | date | datetime
                  ):
         if start > end:
             raise ValueError(f'The start of a period cannot be before its end')
@@ -46,7 +43,7 @@ class TimePeriod(Period):
     def __init__(self,
                  start: time,
                  end: time,
-                 **kwargs):
+                 ):
         if not isinstance(start, time):
             raise ValueError(f"Provided value '{start}' for parameter 'start' is not an instance of time")
         if not isinstance(end, time):
@@ -316,7 +313,7 @@ class DatePeriod(Period):
     def __init__(self,
                  start: date,
                  end: date,
-                 **kwargs):
+                 ):
         if not isinstance(start, date) or isinstance(start, datetime):
             raise ValueError(f"Provided value '{start}' for parameter 'start' is not an instance of datetime.date")
         if not isinstance(end, date) or isinstance(end, datetime):
@@ -571,7 +568,7 @@ class DatetimePeriod(Period):
     def __init__(self,
                  start: datetime,
                  end: datetime,
-                 **kwargs):
+                 ):
         if not isinstance(start, datetime):
             raise ValueError(f"Provided value '{start}' for parameter 'start' is not an instance of "
                              f"datetime.datetime")
