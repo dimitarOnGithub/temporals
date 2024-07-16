@@ -582,7 +582,34 @@ class DatetimePeriod(Period):
 
     def _time_repeats(self,
                       _t: time | TimePeriod) -> bool:
-        """ TODO: Docs """
+        """ Internal method that checks if the provided time or TimePeriod will repeat within the duration of this
+         period.
+
+         for datetime.time objects:
+         In all cases where this period is equal to or longer than 2 days (48h), this method will return True;
+         For 1 day long periods (24h) or shorter, if the time is within the start and end of this period,
+         it will return True;
+
+         for periods.TimePeriod objects:
+         In all cases where this period is longer than 2 days (over 72h), it will return True;
+         In cases where the period is 2 days long (up to 72h), it will only return True if the TimePeriod does NOT start
+         AND end before and after, respectively, this period.
+         In cases of 1 day long (up to 48h) periods, it will only return True if the TimePeriod does not either start
+         before this period, or end after it.
+
+         It is important to remember that this method only checks FULL repetition, meaning this:
+           0800               1700           Midnight        0800                   1700
+            /========================================================================/ <- This Period
+               /======/                                            /======/            <- TimePeriod
+             0900    1200                                        0900    1200
+
+         Cases of partially overlapping, but not fully, will return Fase:
+           0800               1700           Midnight        0800                   1700
+            /========================================================================/         <- This Period
+         /=============================/                   /=============================/     <- TimePeriod
+        0700                         2000                0700                           2000
+
+         """
         if isinstance(_t, time):
             if self.duration.days >= 2:
                 return True
@@ -596,7 +623,7 @@ class DatetimePeriod(Period):
             if self.duration.days == 2:
                 # If the period is 2 days long, the TimePeriod must start before it and end after it in order not to
                 # repeat, otherwise, it will repeat
-                if _t.start >= self.start.time() or _t.end <= self.end.time():
+                if not _t.start < self.start.time() or not self.end.time() < _t.end:
                     return True
             elif self.duration.days == 1:
                 # If the period is (at least) 1 day long, it must either start before it or end after it not to repeat

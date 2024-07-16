@@ -78,6 +78,9 @@ class TestDatetimePeriod:
         # TimePeriod that starts and ends within it
         self.period1 = TimePeriod(start=time(9, 0), end=time(10, 0))
         assert self.period._time_repeats(self.period1) is True
+        # TimePeriod that has start time and end time after this period - not repeating
+        self.period1 = TimePeriod(start=time(7, 0), end=time(12, 0))
+        assert self.period._time_repeats(self.period1) is False
 
     def test_timeperiod_eq(self):
         self.start = datetime(2024, 1, 1, 8, 0)
@@ -366,6 +369,13 @@ class TestDatetimePeriod:
         self.period = DatetimePeriod(start=self.start, end=self.end)
 
         self.other_start = time(10, 0)
+        self.other_end = time(14, 0)
+        self.other_period = TimePeriod(start=self.other_start, end=self.other_end)
+
+        with pytest.raises(TimeAmbiguityError):
+            self.period.overlaps_with(self.other_period)
+
+        self.other_start = time(6, 0)
         self.other_end = time(14, 0)
         self.other_period = TimePeriod(start=self.other_start, end=self.other_end)
 
