@@ -3,6 +3,9 @@
 The goal of this library is to provide a minimalistic, out-of-the-box utility on top of the Python's 
 `datetime` in regards to working with time and date, or both, periods.
 
+> :warning: As it currently stands (assume the latest release), the library has no out of the box support
+> for "aware" datetime objects. All the calculations are done by the Python `datetime` library.
+
 ## Quickstart
 
 ### Installation
@@ -27,8 +30,8 @@ within its bounds.
 
 - **DatetimePeriod**
 
-    This is the most complete implementation of both periods above as it contains both a date, and a time,
-information.
+    This is the most complete implementation of both periods above as it contains both a date, and a time, 
+defined using `datetime.datetime`.
 
 ### Documentation
 
@@ -75,18 +78,27 @@ print(italy_visit.duration.isoformat(fold=True))  # 'P1W'
 
 ---
 
-Sometimes we need to be a bit more precise 
+Sometimes, we need both date and time to properly describe a period in time and this is the purpose
+`DatetimePeriod` serves
 ```python
 from datetime import datetime
 from temporals import DatetimePeriod
-from time import sleep
-import random
 
-before = datetime.now()
-sleep(random.randint(1, 10))
-after = datetime.now()
+takeoff = datetime(2024, 8, 2, 22, 11, 34)  # 22:11:34, 2nd of Aug 2024
+landing = datetime(2024, 8, 3, 4, 55, 3)  # 04:55:03, 3rd of Aug 2024
 
-sleep_time = DatetimePeriod(start=before, end=after)
-print(sleep_time)  # 2024-07-16T23:14:17.864633/2024-07-16T23:14:25.64172
-print(sleep_time.duration)  # P0Y0M0W0DT0H0M7.777088S
+flight = DatetimePeriod(start=takeoff, end=landing)
+print(flight)  
+# 2024-08-02T22:11:34/2024-08-03T04:55:03
+
+# This is a PITA to read, why not try something nicer
+print(flight.duration.isoformat())
+# PT6H43M29S
+
+# Enhance
+pattern = "%Hh%Mm"
+formatted_time = flight.duration.format(pattern)
+sentence = f"The flight lasted around {formatted_time}"
+print(sentence)
+# The flight lasted around 6h43m
 ```
