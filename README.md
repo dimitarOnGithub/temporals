@@ -95,7 +95,7 @@ print(flight)
 print(flight.duration.isoformat())
 # PT6H43M29S
 
-# Enhance
+# "Stop. Enhance. Give me a hard copy right there."
 pattern = "%Hh%Mm"
 formatted_time = flight.duration.format(pattern)
 sentence = f"The flight lasted around {formatted_time}"
