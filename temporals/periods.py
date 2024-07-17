@@ -1007,14 +1007,18 @@ class Duration:
             self.timedelta = _end - _start
         else:
             self.timedelta = self.end - self.start
-        # TODO: Test this and account for leap years
         self.seconds: int = 0
+        self.minutes: int = 0
         self.hours: int = 0
         self.days: int = 0
         self.weeks: int = 0
         self.months: int = 0
         self.years: int = 0
-        self.minutes: int = int(self.timedelta.total_seconds() // 60)
+        self._calculate_period()
+
+    def _calculate_period(self):
+        self.seconds: int = int(self.timedelta.total_seconds())
+        self.minutes: int = self.seconds // 60
         if self.minutes >= 1:
             self.seconds = int(self.timedelta.total_seconds() - (self.minutes * 60))
         if self.minutes // 60 >= 1:
@@ -1043,7 +1047,12 @@ class Duration:
             return f'Duration(start={self.start.__repr__()}, end={self.end.__repr__()})'
 
     def isoformat(self, fold=True):
-        """ TODO: Docs; There must be a more intelligent way to do that """
+        """ This method returns the duration in an ISO-8601 (https://en.wikipedia.org/wiki/ISO_8601#Durations) format.
+        Optional parameter `fold` can be set to False (True by default) to display even the empty elements of the
+        duration.
+
+        TODO: There must be a more intelligent way to do that
+        """
         _rep = "P"
         if self.years or not fold:
             _rep = f"{_rep}{self.years}Y"
@@ -1053,16 +1062,30 @@ class Duration:
             _rep = f"{_rep}{self.weeks}W"
         if self.days or not fold:
             _rep = f"{_rep}{self.days}D"
-        # From now on, it's time elements, so we must append "T"; This is a bug if the duration has no time.
-        _rep = f"{_rep}T"
-        if self.hours or not fold:
-            _rep = f"{_rep}{self.hours}H"
-        if self.minutes or not fold:
-            _rep = f"{_rep}{self.minutes}M"
-        if self.seconds or not fold:
-            _rep = f"{_rep}{self.seconds}S"
+        # From now on, it's time elements, so we must append "T"
+        if (self.hours or self.minutes or self.seconds) or not fold:
+            _rep = f"{_rep}T"
+            if self.hours or not fold:
+                _rep = f"{_rep}{self.hours}H"
+            if self.minutes or not fold:
+                _rep = f"{_rep}{self.minutes}M"
+            if self.seconds or not fold:
+                _rep = f"{_rep}{self.seconds}S"
         return _rep
 
-    def format(self, pattern, fold=False):
-        # TODO: Implement
-        pass
+    def format(self, pattern: str):
+        """ Offers a way to format the representation of this Duration similar to datetime's strftime. In the _map
+        dictionary below you can see which characters will be replaced by which values."""
+        _map = {
+            '%Y': self.years,
+            '%m': self.months,
+            '%W': self.weeks,
+            '%d': self.days,
+            '%H': self.hours,
+            '%M': self.minutes,
+            '%S': self.seconds
+        }
+        for key, value in _map.items():
+            if key in pattern:
+                pattern = pattern.replace(key, str(value))
+        return pattern
