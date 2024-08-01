@@ -1,4 +1,5 @@
 import pytest
+from datetime import time, date
 from temporals import PeriodFactory
 from temporals import TimePeriod, DatePeriod, DatetimePeriod
 
@@ -26,3 +27,18 @@ class TestFactory:
         a = self.factory("2024-11-01 13:00", "2024-11-01 15:00")
         assert isinstance(a, DatetimePeriod)
 
+    def test_force_creation_time(self):
+        self.factory = PeriodFactory
+        a = self.factory(
+            time(10, 0),
+            time(12, 0),
+            force_datetime=True)
+        assert isinstance(a, DatetimePeriod)
+
+    def test_force_creation_date(self):
+        self.factory = PeriodFactory
+        a = self.factory(
+            date(2024, 1, 1),
+            date(2024, 1, 10),
+            force_datetime=True)
+        assert isinstance(a, DatetimePeriod)
