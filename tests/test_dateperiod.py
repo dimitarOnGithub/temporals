@@ -127,3 +127,14 @@ class TestDatePeriod:
         self.second_disconnect = self.other_period.get_disconnect(self.period)
         assert self.second_disconnect.start == date(2024, 1, 10)
         assert self.second_disconnect.end == date(2024, 1, 30)
+
+        # Non overlapping periods
+        self.other_start = date(2024, 1, 15)
+        self.other_end = date(2024, 1, 30)
+        self.other_period = DatePeriod(start=self.other_start, end=self.other_end)
+
+        self.first_disconnect = self.period.get_disconnect(self.other_period)
+        assert self.first_disconnect is None
+
+        self.second_disconnect = self.other_period.get_disconnect(self.period)
+        assert self.second_disconnect is None

@@ -127,3 +127,14 @@ class TestTimePeriod:
         self.second_disconnect = self.other_period.get_disconnect(self.period)
         assert self.second_disconnect.start == time(10, 0)
         assert self.second_disconnect.end == time(12, 0)
+
+        # Non-overlapping periods
+        self.other_start = time(11, 45, 0)
+        self.other_end = time(12, 0, 0)
+        self.other_period = TimePeriod(start=self.other_start, end=self.other_end)
+
+        self.first_disconnect = self.period.get_disconnect(self.other_period)
+        assert self.first_disconnect is None
+
+        self.second_disconnect = self.other_period.get_disconnect(self.period)
+        assert self.second_disconnect is None

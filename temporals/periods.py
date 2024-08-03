@@ -421,7 +421,7 @@ class DatePeriod(Period):
         if isinstance(other, DatetimePeriod):
             other_start = other.start.date()
             other_end = other.end.date()
-        if other_start < self.start and other_end < self.end:
+        if not other_end < self.start and other_start < self.start and other_end < self.end:
             return True
         return False
 
@@ -462,7 +462,7 @@ class DatePeriod(Period):
         if isinstance(other, DatetimePeriod):
             other_start = other.start.date()
             other_end = other.end.date()
-        if self.start < other_start and self.end < other_end:
+        if not self.end < other_start and self.start < other_start and self.end < other_end:
             return True
         return False
 
@@ -776,13 +776,17 @@ class DatetimePeriod(Period):
                                              f"period on {self.start.date().isoformat()} but this period continues "
                                              f"until after it's start on {self.end.date().isoformat()}")
                 else:
-                    return other.start <= self.start.time()
+                    if not other.end < self.start.time():
+                        return other.start <= self.start.time()
             else:
-                return other.start < self.start.time() and other.end < self.end.time()
+                if not other.end < self.start.time():
+                    return other.start < self.start.time() and other.end < self.end.time()
         if isinstance(other, DatePeriod):
-            return other.start < self.start.date() and other.end < self.end.date()
+            if not other.end < self.start.date():
+                return other.start < self.start.date() and other.end < self.end.date()
         if isinstance(other, DatetimePeriod):
-            return other.start < self.start and other.end < self.end
+            if not other.end < self.start:
+                return other.start < self.start and other.end < self.end
         return False
 
     def overlapped_by(self,
@@ -828,13 +832,17 @@ class DatetimePeriod(Period):
                                              f"period on {self.start.date().isoformat()} but this period continues "
                                              f"until after it's start on {self.end.date().isoformat()}")
                 else:
-                    return self.start.time() <= other.start
+                    if not self.end.time() < other.start:
+                        return self.start.time() <= other.start
             else:
-                return self.start.time() < other.start and self.end.time() < other.end
+                if not self.end.time() < other.start:
+                    return self.start.time() < other.start and self.end.time() < other.end
         if isinstance(other, DatePeriod):
-            return self.start.date() < other.start and self.end.date() < other.end
+            if not self.end.date() < other.start:
+                return self.start.date() < other.start and self.end.date() < other.end
         if isinstance(other, DatetimePeriod):
-            return self.start < other.start and self.end < other.end
+            if not self.end < other.start:
+                return self.start < other.start and self.end < other.end
         return False
 
     def get_overlap(self,

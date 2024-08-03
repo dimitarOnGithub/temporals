@@ -532,3 +532,43 @@ class TestDatetimePeriod:
             start=datetime(2024, 1, 3, 12, 0),
             end=datetime(2024, 1, 4, 8, 0)
         )
+
+        # Non overlapping periods
+        # Same day period
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 1, 12, 0)
+        self.period = DatetimePeriod(start=self.start, end=self.end)
+
+        # Time period test
+        self.time_period = TimePeriod(
+            start=time(13, 0),
+            end=time(14, 0)
+        )
+        self.dc = self.period.get_disconnect(self.time_period)
+        assert self.dc is None
+        self.other_dc = self.time_period.get_disconnect(self.period)
+        assert self.other_dc is None
+
+        # Date period test
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 5, 12, 0)
+        self.period = DatetimePeriod(start=self.start, end=self.end)
+
+        self.date_period = DatePeriod(
+            start=date(2024, 1, 10),
+            end=date(2024, 1, 15)
+        )
+        self.dc = self.period.get_disconnect(self.date_period)
+        assert self.dc is None
+        self.other_dc = self.date_period.get_disconnect(self.period)
+        assert self.other_dc is None
+
+        # Datetime period test
+        self.dt_period = DatetimePeriod(
+            start=datetime(2023, 12, 10, 10, 0),
+            end=datetime(2023, 12, 15, 8, 0)
+        )
+        self.dc = self.period.get_disconnect(self.dt_period)
+        assert self.dc is None
+        self.other_dc = self.dt_period.get_disconnect(self.period)
+        assert self.other_dc is None
