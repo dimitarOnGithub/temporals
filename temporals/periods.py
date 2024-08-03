@@ -681,8 +681,6 @@ class DatetimePeriod(Period):
         Then you can check if the pto period is within your quarter period:
         >>> pto in quarter
 
-        TODO: Docs on time comparison
-
         For more in-depth comparisons and functionality, see:
             overlaps_with
             overlapped_by
@@ -703,7 +701,7 @@ class DatetimePeriod(Period):
             if self._time_repeats(item):
                 raise TimeAmbiguityError(f"The provided TimePeriod '{item}' exist within this DatetimePeriod "
                                          f"('{self}') more than once. For more information on this error, "
-                                         f"see <link to doc>")
+                                         f"see https://github.com/dimitarOnGithub/temporals/wiki/Misc")
             if self.duration.days == 1:
                 if item.start < self.start.time():
                     if item.end <= self.end.time():
@@ -726,7 +724,7 @@ class DatetimePeriod(Period):
             if self._time_repeats(item):
                 raise TimeAmbiguityError(f"The provided unit of time ('{item}') exist within this DatetimePeriod "
                                          f"('{self}')  more than once. For more information on this error, "
-                                         f"see <link to doc>")
+                                         f"see https://github.com/dimitarOnGithub/temporals/wiki/Misc")
             if self.duration.days == 1:
                 return True
             return self.start.time() <= item <= self.end.time()
@@ -766,7 +764,7 @@ class DatetimePeriod(Period):
             if self._time_repeats(other):
                 raise TimeAmbiguityError(f"The provided TimePeriod '{other}' exist within this DatetimePeriod "
                                          f"('{self}') more than once. For more information on this error, "
-                                         f"see <link to doc>")
+                                         f"see https://github.com/dimitarOnGithub/temporals/wiki/Misc")
             if self.start.date() < self.end.date():
                 # Day stretches overnight - the start time must be before the start of this period but also after the
                 # end of it
@@ -822,7 +820,7 @@ class DatetimePeriod(Period):
             if self._time_repeats(other):
                 raise TimeAmbiguityError(f"The provided TimePeriod '{other}' exist within this DatetimePeriod "
                                          f"('{self}') more than once. For more information on this error, "
-                                         f"see <link to doc>")
+                                         f"see https://github.com/dimitarOnGithub/temporals/wiki/Misc")
             if self.start.date() < self.end.date():
                 # Day stretches overnight - the start time must be after the start of this period but also after the
                 # end of it
