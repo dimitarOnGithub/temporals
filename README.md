@@ -35,7 +35,7 @@ defined using `datetime.datetime`.
 
 ### Documentation
 
-Coming soon!
+In-depth documentation available on the Wiki page of the repository - https://github.com/dimitarOnGithub/temporals/wiki
 
 ### Examples
 
