@@ -976,6 +976,7 @@ class DatetimePeriod(Period):
 class Duration:
 
     def __init__(self,
+                 *,
                  period: Period = None,
                  start: time | date | datetime = None,
                  end: time | date | datetime = None):

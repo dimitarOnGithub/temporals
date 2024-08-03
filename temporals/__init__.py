@@ -1,6 +1,6 @@
 from datetime import time, date, datetime
 from .utils import get_datetime
-from .periods import DatePeriod, TimePeriod, DatetimePeriod
+from .periods import DatePeriod, TimePeriod, DatetimePeriod, Duration
 
 
 __all__ = [
@@ -8,6 +8,7 @@ __all__ = [
     'DatePeriod',
     'TimePeriod',
     'DatetimePeriod',
+    'Duration',
     'get_datetime',
 ]
 
