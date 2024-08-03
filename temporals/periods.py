@@ -200,7 +200,7 @@ class TimePeriod(Period):
         if isinstance(other, DatetimePeriod):
             other_start = other.start.time()
             other_end = other.end.time()
-        if self.start < other_start and self.end < other_end:
+        if not self.end < other_start and self.start < other_start and self.end < other_end:
             return True
         return False
 
