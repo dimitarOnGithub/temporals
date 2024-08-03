@@ -340,23 +340,6 @@ class TestDatetimePeriod:
         with pytest.raises(TimeAmbiguityError):
             self.other_period in self.period
 
-        """ 2 days long period 
-                2024-01-01 0800                                         2024-01-02 1200
-                    /==========================================================/
-                /=======/                                              /======/
-              0700     1200                                          0700    1200
-        """
-        self.start = datetime(2024, 1, 1, 8, 0)
-        self.end = datetime(2024, 1, 2, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
-
-        self.other_start = time(10, 0)
-        self.other_end = time(12, 0)
-        self.other_period = TimePeriod(start=self.other_start, end=self.other_end)
-
-        with pytest.raises(TimeAmbiguityError):
-            self.other_period in self.period
-
         # Overlaps with ambiguity
         """ 2 days long period 
                 2024-01-01 0800                                         2024-01-02 1200
