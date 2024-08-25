@@ -28,4 +28,4 @@ class PeriodFactory:
             return DatePeriod(start, end)
         if type(start) is datetime and type(end) is datetime:
             return DatetimePeriod(start, end)
-        raise ValueError(f"Could not find suitable period type for the provided values")
+        raise ValueError("Could not find suitable period type for the provided values")

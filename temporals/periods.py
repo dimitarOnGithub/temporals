@@ -10,22 +10,22 @@ class Period:
                  end: time | date | datetime
                  ):
         if start > end:
-            raise ValueError(f'The start of a period cannot be before its end')
+            raise ValueError('The start of a period cannot be before its end')
         self.start = start
         self.end = end
         self.duration = Duration(period=self)
 
     def __eq__(self, other):
-        raise NotImplemented(f'Period class does not contain __eq__ method, inheriting classes must override it')
+        raise NotImplementedError('Period class does not contain __eq__ method, inheriting classes must override it')
 
     def __contains__(self, item):
-        raise NotImplemented(f'Period class does not contain __eq__ method, inheriting classes must override it')
+        raise NotImplementedError('Period class does not contain __eq__ method, inheriting classes must override it')
 
     def __lt__(self, other):
-        raise NotImplemented(f'Period class does not contain __lt__ method, inheriting classes must override it')
+        raise NotImplementedError('Period class does not contain __lt__ method, inheriting classes must override it')
 
     def __gt__(self, other):
-        raise NotImplemented(f'Period class does not contain __lt__ method, inheriting classes must override it')
+        raise NotImplementedError('Period class does not contain __lt__ method, inheriting classes must override it')
 
     def __repr__(self):
         return f"{self.__class__.__name__}(start={self.start.__repr__()}, end={self.end.__repr__()})"
