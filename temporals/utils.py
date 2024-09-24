@@ -1,5 +1,6 @@
 from datetime import time, date, datetime
 from itertools import zip_longest
+from typing import Union
 
 TIME_PATTERNS = [
     "%I:%M%p",  # 01:51AM
@@ -65,7 +66,7 @@ DATETIME_PATTERNS = [
 
 
 def get_datetime(point_in_time: str,
-                 force_datetime: bool = False) -> time | date | datetime:
+                 force_datetime: bool = False) -> Union[time, date, datetime]:
     """
     A helper function used by the PeriodFactory object when either the start or the end of a period is a string.
     The goal of this function is to best determine what type the provided string fits (time, date, datetime) and return
@@ -126,7 +127,7 @@ def get_datetime(point_in_time: str,
 
 
 def _test_pattern(point_in_time: str,
-                  pattern: str) -> datetime | None:
+                  pattern: str) -> Union[datetime, None]:
     """
     Helper method used by the `get_datetime` function above to try and initialize the point_in_time string as a datetime
     object by using the provided `pattern` parameter.
@@ -144,7 +145,7 @@ def _test_pattern(point_in_time: str,
         return None
 
 
-def _test_defaults(point_in_time: str | int | float) -> time | date | datetime | None:
+def _test_defaults(point_in_time: Union[str, int, float]) -> Union[time, date, datetime, None]:
     """
     Layer to invoke the different datetime constructor functions below.
 
@@ -160,7 +161,7 @@ def _test_defaults(point_in_time: str | int | float) -> time | date | datetime |
     return resolved_pit
 
 
-def _test_time(point_in_time: str) -> time | None:
+def _test_time(point_in_time: str) -> Union[time, None]:
     """ Try to create a datetime.time object """
     try:
         return time.fromisoformat(point_in_time)
@@ -168,7 +169,7 @@ def _test_time(point_in_time: str) -> time | None:
         return None
 
 
-def _test_date(point_in_time: str | int) -> date | None:
+def _test_date(point_in_time: Union[str, int]) -> Union[date, None]:
     """ Try to create a datetime.date object """
     pit_str: str = _convert_to_type(point_in_time, str)
     pit_int: int = _convert_to_type(point_in_time, int)
@@ -183,7 +184,7 @@ def _test_date(point_in_time: str | int) -> date | None:
     return None
 
 
-def _test_datetime(point_in_time: str | float) -> datetime | None:
+def _test_datetime(point_in_time: Union[str, float]) -> Union[datetime, None]:
     """ Try to create a datetime.date object """
     pit_str: str = _convert_to_type(point_in_time, str)
     pit_float: float = _convert_to_type(point_in_time, float)
@@ -205,7 +206,7 @@ def _convert_to_type(value, target_type):
         return None
 
 
-def convert_to_datetime(value: time | date) -> datetime:
+def convert_to_datetime(value: Union[time, date]) -> datetime:
     if isinstance(value, datetime):
         return value
     if isinstance(value, date):

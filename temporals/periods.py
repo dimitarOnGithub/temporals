@@ -6,8 +6,8 @@ from .exceptions import TimeAmbiguityError
 class Period:
 
     def __init__(self,
-                 start: time | date | datetime,
-                 end: time | date | datetime
+                 start: Union[time, date, datetime],
+                 end: Union[time, date, datetime]
                  ):
         if start > end:
             raise ValueError('The start of a period cannot be before its end')
@@ -578,7 +578,7 @@ class DatetimePeriod(Period):
         super().__init__(start, end)
 
     def _time_repeats(self,
-                      _t: time | TimePeriod) -> bool:
+                      _t: Union[time, TimePeriod]) -> bool:
         """ Internal method that checks if the provided time or TimePeriod will repeat within the duration of this
          period.
 
@@ -984,8 +984,8 @@ class Duration:
     def __init__(self,
                  *,
                  period: Period = None,
-                 start: time | date | datetime = None,
-                 end: time | date | datetime = None):
+                 start: Union[time, date, datetime] = None,
+                 end: Union[time, date, datetime] = None):
         if period:
             if isinstance(period, Period) or issubclass(type(period), Period):
                 self.period: Period = period
