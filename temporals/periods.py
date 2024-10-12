@@ -30,11 +30,11 @@ class Period:
 
     @abstractmethod
     def is_before(self, other):
-        raise NotImplementedError(f"Parent class 'Period' does not implement is_before method")
+        raise NotImplementedError("Parent class 'Period' does not implement is_before method")
 
     @abstractmethod
     def is_after(self, other):
-        raise NotImplementedError(f"Parent class 'Period' does not implement is_after method")
+        raise NotImplementedError("Parent class 'Period' does not implement is_after method")
 
 
 class TimePeriod(Period):
