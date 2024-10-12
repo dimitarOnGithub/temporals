@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from datetime import time, date, datetime, timedelta
 from typing import Union
 from .exceptions import TimeAmbiguityError
@@ -21,17 +22,19 @@ class Period:
     def __contains__(self, item):
         raise NotImplementedError('Period class does not contain __eq__ method, inheriting classes must override it')
 
-    def __lt__(self, other):
-        raise NotImplementedError('Period class does not contain __lt__ method, inheriting classes must override it')
-
-    def __gt__(self, other):
-        raise NotImplementedError('Period class does not contain __lt__ method, inheriting classes must override it')
-
     def __repr__(self):
         return f"{self.__class__.__name__}(start={self.start.__repr__()}, end={self.end.__repr__()})"
 
     def __str__(self):
         return f'{self.start.isoformat()}/{self.end.isoformat()}'
+
+    @abstractmethod
+    def is_before(self, other):
+        raise NotImplementedError("Parent class 'Period' does not implement is_before method")
+
+    @abstractmethod
+    def is_after(self, other):
+        raise NotImplementedError("Parent class 'Period' does not implement is_after method")
 
 
 class TimePeriod(Period):
@@ -113,13 +116,50 @@ class TimePeriod(Period):
             return self.start <= item <= self.end
         return False
 
-    def __lt__(self, other):
-        # TODO: think about if < makes sense
-        pass
+    def is_before(self, other: Union['TimePeriod', time]) -> bool:
+        """ Test if this period ends before the provided `other` value. This check will evaluate as True in the
+        following scenario:
 
-    def __gt__(self, other):
-        # TODO: think about if > makes sense
-        pass
+        time object:
+        1000 This period:   1400
+        |====================|
+                                |
+                              1500
+
+        TimePeriod object:
+        1000 This period:   1400
+        |====================|
+                                |====|
+                              1500  1700
+        """
+        if isinstance(other, time):
+            return self.end <= other
+        elif isinstance(other, TimePeriod):
+            return self.end <= other.start
+        return False
+
+    def is_after(self, other: Union['TimePeriod', time]) -> bool:
+        """ Test if this period starts after the provided `other` value. This check will evaluate as True in the
+        following scenario:
+
+        time object:
+                        1000       This period:          1700
+                        |==================================|
+                    |
+                  0900
+
+        TimePeriod object:
+                        1000       This period:          1700
+                        |==================================|
+            |=======|
+          0700    0900
+
+        """
+        if isinstance(other, time):
+            return other <= self.start
+        elif isinstance(other, TimePeriod):
+            return other.end <= self.start
+        return False
 
     def overlaps_with(self,
                       other: Union['TimePeriod', 'DatetimePeriod']

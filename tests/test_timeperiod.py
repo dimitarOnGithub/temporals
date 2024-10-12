@@ -77,6 +77,42 @@ class TestTimePeriod:
         self.period_dt = DatetimePeriod(start=self.start_dt, end=self.end_dt)
         assert self.period_dt in self.period
 
+    def test_is_before(self):
+        self.start = time(10, 0, 0)
+        self.end = time(12, 0, 0)
+        self.period = TimePeriod(start=self.start, end=self.end)
+
+        assert self.period.is_before(time(13, 0)) is True
+        assert self.period.is_before(time(10, 0)) is False
+
+        self.other_start = time(12, 0, 0)
+        self.other_end = time(13, 0, 0)
+        self.other_period = TimePeriod(start=self.other_start, end=self.other_end)
+        assert self.period.is_before(self.other_period) is True
+
+        self.other_start = time(8, 0, 0)
+        self.other_end = time(10, 0, 0)
+        self.other_period = TimePeriod(start=self.other_start, end=self.other_end)
+        assert self.period.is_before(self.other_period) is False
+
+    def test_is_after(self):
+        self.start = time(10, 0, 0)
+        self.end = time(12, 0, 0)
+        self.period = TimePeriod(start=self.start, end=self.end)
+
+        assert self.period.is_after(time(13, 0)) is False
+        assert self.period.is_after(time(10, 0)) is True
+
+        self.other_start = time(12, 0, 0)
+        self.other_end = time(13, 0, 0)
+        self.other_period = TimePeriod(start=self.other_start, end=self.other_end)
+        assert self.period.is_after(self.other_period) is False
+
+        self.other_start = time(8, 0, 0)
+        self.other_end = time(10, 0, 0)
+        self.other_period = TimePeriod(start=self.other_start, end=self.other_end)
+        assert self.period.is_after(self.other_period) is True
+
     def test_overlaps(self):
         """
            0800     Period 1    1000
