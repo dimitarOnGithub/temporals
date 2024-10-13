@@ -77,6 +77,64 @@ class TestDatePeriod:
         self.period_dt = DatetimePeriod(start=self.start_dt, end=self.end_dt)
         assert self.period_dt in self.period
 
+    def test_is_before(self):
+        self.start = date(2024, 1, 1)
+        self.end = date(2024, 1, 10)
+        self.period = DatePeriod(start=self.start, end=self.end)
+        assert self.period.is_before(date(2024, 1, 11)) is True
+        assert self.period.is_before(date(2024, 1, 10)) is False
+        assert self.period.is_before(datetime(2024, 1, 11, 8, 0)) is True
+        assert self.period.is_before(datetime(2024, 1, 10, 8, 0)) is False
+
+        self.other_start = date(2024, 1, 11)
+        self.other_end = date(2024, 1, 30)
+        self.other_period = DatePeriod(start=self.other_start, end=self.other_end)
+        assert self.period.is_before(self.other_period) is True
+
+        self.other_start = date(2024, 1, 10)
+        self.other_end = date(2024, 1, 30)
+        self.other_period = DatePeriod(start=self.other_start, end=self.other_end)
+        assert self.period.is_before(self.other_period) is False
+
+        self.other_start = datetime(2024, 1, 10, 8, 0)
+        self.other_end = datetime(2024, 1, 12, 8, 0)
+        self.other_period = DatetimePeriod(start=self.other_start, end=self.other_end)
+        assert self.period.is_before(self.other_period) is False
+
+        self.other_start = datetime(2024, 1, 11, 8, 0)
+        self.other_end = datetime(2024, 1, 12, 8, 0)
+        self.other_period = DatetimePeriod(start=self.other_start, end=self.other_end)
+        assert self.period.is_before(self.other_period) is True
+
+    def test_is_after(self):
+        self.start = date(2024, 1, 10)
+        self.end = date(2024, 1, 20)
+        self.period = DatePeriod(start=self.start, end=self.end)
+        assert self.period.is_after(date(2024, 1, 10)) is False
+        assert self.period.is_after(date(2024, 1, 9)) is True
+        assert self.period.is_after(datetime(2024, 1, 10, 8, 0)) is False
+        assert self.period.is_after(datetime(2024, 1, 9, 8, 0)) is True
+
+        self.other_start = date(2024, 1, 1)
+        self.other_end = date(2024, 1, 10)
+        self.other_period = DatePeriod(start=self.other_start, end=self.other_end)
+        assert self.period.is_after(self.other_period) is False
+
+        self.other_start = date(2024, 1, 1)
+        self.other_end = date(2024, 1, 5)
+        self.other_period = DatePeriod(start=self.other_start, end=self.other_end)
+        assert self.period.is_after(self.other_period) is True
+
+        self.other_start = datetime(2024, 1, 1, 8, 0)
+        self.other_end = datetime(2024, 1, 10, 8, 0)
+        self.other_period = DatetimePeriod(start=self.other_start, end=self.other_end)
+        assert self.period.is_after(self.other_period) is False
+
+        self.other_start = datetime(2024, 1, 1, 8, 0)
+        self.other_end = datetime(2024, 1, 9, 8, 0)
+        self.other_period = DatetimePeriod(start=self.other_start, end=self.other_end)
+        assert self.period.is_after(self.other_period) is True
+
     def test_overlaps(self):
         """
         2024-01-01 Period 1   2024-01-10
