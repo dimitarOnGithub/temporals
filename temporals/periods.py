@@ -818,6 +818,38 @@ class DatetimePeriod(Period):
             return self.start.time() <= item <= self.end.time()
         return False
 
+    def is_before(self,
+                  other: Union['DatePeriod', 'DatetimePeriod', date, datetime]
+                  ) -> bool:
+        """ Test if this period ends before the provided `other` value. In the cases when a date or a DatePeriod is
+        provided, the check will be done based on at least a 24 hour difference (ie, this period ends on the 2024-01-01
+        and the provided date/DatePeriod begins on the 2024-01-02). In all other cases (datetime and DatetimePeriod),
+        objects are allowed to share the same end-start datetime.
+        """
+        if isinstance(other, DatePeriod):
+            return self.end.date() < other.start
+        elif isinstance(other, datetime):
+            return self.end <= other
+        elif isinstance(other, date):
+            return self.end.date() < other
+        return self.end <= other.start
+
+    def is_after(self,
+                 other: Union['DatePeriod', 'DatetimePeriod', date, datetime]
+                 ) -> bool:
+        """ Test if this period begins after the provided `other` value. In the cases when a date or a DatePeriod is
+        provided, the check will be done based on at least a 24 hour difference (ie, this period begins on the
+        2024-01-02 and the provided date/DatePeriod ends on the 2024-01-01). In all other cases (datetime and
+        DatetimePeriod), objects are allowed to share the same end-start datetime.
+        """
+        if isinstance(other, DatePeriod):
+            return other.end < self.start.date()
+        elif isinstance(other, datetime):
+            return other <= self.start
+        elif isinstance(other, date):
+            return other < self.start.date()
+        return other.end <= self.start
+
     def overlaps_with(self,
                       other: Union['TimePeriod', 'DatePeriod', 'DatetimePeriod']
                       ) -> bool:
