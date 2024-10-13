@@ -423,6 +423,54 @@ class DatePeriod(Period):
             return self.start <= item <= self.end
         return False
 
+    def is_before(self,
+                  other: Union['DatePeriod', 'DatetimePeriod', datetime, date]
+                  ) -> bool:
+        """ Test if this period is ending before another one begins. This check will evaluate as True in the
+        following scenario:
+        2024-01-01        2024-01-05
+            |================|   <------ This period
+                                |================|
+                            2024-01-06        2024-01-10
+
+        Since dates do not distinguish between specific hours, periods sharing the same start-end date, or vice versa,
+        are considered overlapping.
+        """
+        _value: date = None
+        if isinstance(other, DatePeriod):
+            _value = other.start
+        elif isinstance(other, DatetimePeriod):
+            _value = other.start.date()
+        elif isinstance(other, datetime):
+            _value = other.date()
+        else:
+            _value = other
+        return self.end < _value
+
+    def is_after(self,
+                 other: Union['DatePeriod', 'DatetimePeriod', datetime, date]
+                 ) -> bool:
+        """ Test if this period is starting after another one ends. This check will evaluate as True in the
+        following scenario:
+        2024-01-01        2024-01-05
+            |================|
+                                |================| <----- This period
+                            2024-01-06        2024-01-10
+
+        Since dates do not distinguish between specific hours, periods sharing the same start-end date, or vice versa,
+        are considered overlapping.
+        """
+        _value: date = None
+        if isinstance(other, DatePeriod):
+            _value = other.end
+        elif isinstance(other, DatetimePeriod):
+            _value = other.end.date()
+        elif isinstance(other, datetime):
+            _value = other.date()
+        else:
+            _value = other
+        return _value < self.start
+
     def overlaps_with(self,
                       other: Union['DatePeriod', 'DatetimePeriod']
                       ) -> bool:
