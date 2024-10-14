@@ -28,14 +28,6 @@ class Period:
     def __str__(self):
         return f'{self.start.isoformat()}/{self.end.isoformat()}'
 
-    @abstractmethod
-    def is_before(self, other):
-        raise NotImplementedError("Parent class 'Period' does not implement is_before method")
-
-    @abstractmethod
-    def is_after(self, other):
-        raise NotImplementedError("Parent class 'Period' does not implement is_after method")
-
 
 class TimePeriod(Period):
     """ The TimePeriod class is responsible for time periods within a 24-hour day. Instances of this class offer the
@@ -1068,7 +1060,9 @@ class DatetimePeriod(Period):
                 period_to_use = DatetimePeriod
                 _start = self.start if self.overlaps_with(other) else other.start
                 _end = other.end if self.overlaps_with(other) else self.end
-        return period_to_use(start=_start, end=_end)
+            return period_to_use(start=_start, end=_end)
+        else:
+            return None
 
     def get_disconnect(self,
                        other: Union['TimePeriod', 'DatePeriod', 'DatetimePeriod']
