@@ -155,6 +155,29 @@ class TestDatePeriod:
             end=datetime(2024, 1, 20, 12, 0)
         )
 
+    def test_get_interim(self):
+        self.start = date(2024, 1, 10)
+        self.end = date(2024, 1, 20)
+        self.period = DatePeriod(start=self.start, end=self.end)
+        assert (self.period.get_interim(
+            date(2024, 1, 1)
+        ) == DatePeriod(date(2024, 1, 1), date(2024, 1, 10)))
+        assert (self.period.get_interim(
+            date(2024, 1, 30)
+        ) == DatePeriod(date(2024, 1, 20), date(2024, 1, 30)))
+
+        self.other_start = date(2024, 1, 1)
+        self.other_end = date(2024, 1, 5)
+        self.other_period = DatePeriod(start=self.other_start, end=self.other_end)
+        assert (self.period.get_interim(self.other_period) == DatePeriod(date(2024, 1, 5),
+                                                                         date(2024, 1, 10)))
+
+        self.other_start = date(2024, 1, 25)
+        self.other_end = date(2024, 1, 30)
+        self.other_period = DatePeriod(start=self.other_start, end=self.other_end)
+        assert (self.period.get_interim(self.other_period) == DatePeriod(date(2024, 1, 20),
+                                                                         date(2024, 1, 25)))
+
     def test_overlaps(self):
         """
         2024-01-01 Period 1   2024-01-10

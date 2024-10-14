@@ -130,6 +130,25 @@ class TestTimePeriod:
             end=datetime(2024, 1, 20, 12, 0)
         )
 
+    def test_get_interim(self):
+        self.start = time(8, 0)
+        self.end = time(12, 0)
+        self.period = TimePeriod(start=self.start, end=self.end)
+        assert self.period.get_interim(time(3, 0)) == TimePeriod(time(3, 0),
+                                                                 time(8, 0))
+        assert self.period.get_interim(time(17, 0)) == TimePeriod(time(12, 0),
+                                                                  time(17, 0))
+
+        self.other_start = time(0, 0, 0)
+        self.other_end = time(3, 0, 0)
+        self.other_period = TimePeriod(start=self.other_start, end=self.other_end)
+        assert self.period.get_interim(self.other_period) == TimePeriod(time(3, 0), time(8, 0))
+
+        self.other_start = time(14, 0, 0)
+        self.other_end = time(17, 0, 0)
+        self.other_period = TimePeriod(start=self.other_start, end=self.other_end)
+        assert self.period.get_interim(self.other_period) == TimePeriod(time(12, 0), time(14, 0))
+
     def test_overlaps(self):
         """
            0800     Period 1    1000

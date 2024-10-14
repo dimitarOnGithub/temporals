@@ -1,4 +1,3 @@
-from abc import abstractmethod
 from datetime import time, date, datetime, timedelta
 from typing import Union
 from .exceptions import TimeAmbiguityError
@@ -152,6 +151,42 @@ class TimePeriod(Period):
         elif isinstance(other, TimePeriod):
             return other.end <= self.start
         return False
+
+    def get_interim(self,
+                    other: Union['TimePeriod', time]) -> Union['TimePeriod', None]:
+        """ Method returns the TimePeriod between the start/end of the provided period, if `other` is a TimePeriod,
+        or the TimePeriod between the point in time and the start/end of this period, depending on whether the same is
+        occurring before the start of this period or after the end of it.
+
+        This method is intended to be used when the provided `other` does not exist within and does not overlap (or is
+        being overlapped) by this period.
+
+        For example, in the case of a point of in time:
+        1000       This period:          1700
+        |==================================|
+                                                | 2000
+                                            Point in time
+
+        The returned TimePeriod will be from 1700 to 2000
+        """
+        _start = None
+        _end = None
+        if isinstance(other, time):
+            if self.is_before(other):
+                _start = self.end
+                _end = other
+            elif self.is_after(other):
+                _start = other
+                _end = self.start
+        elif isinstance(other, TimePeriod):
+            if self.is_before(other):
+                _start = self.end
+                _end = other.start
+            elif self.is_after(other):
+                _start = other.end
+                _end = self.start
+        if _start and _end:
+            return TimePeriod(start=_start, end=_end)
 
     def overlaps_with(self,
                       other: Union['TimePeriod', 'DatetimePeriod']
@@ -461,6 +496,35 @@ class DatePeriod(Period):
             _value = other
         return self.end < _value
 
+    def get_interim(self,
+                    other: Union['DatePeriod', date]
+                    ) -> Union['DatePeriod', None]:
+        """ Method returns the DatePeriod between the start/end of the provided period, if `other` is a DatePeriod,
+        or the DatePeriod between the point in time and the start/end of this period, depending on whether the same is
+        occurring before the start of this period or after the end of it.
+
+        This method is intended to be used when the provided `other` does not exist within and does not overlap (or is
+        being overlapped) by this period.
+        """
+        _start = None
+        _end = None
+        if isinstance(other, DatePeriod):
+            if self.is_before(other):
+                _start = self.end
+                _end = other.start
+            elif self.is_after(other):
+                _start = other.end
+                _end = self.start
+        elif isinstance(other, date):
+            if self.is_before(other):
+                _start = self.end
+                _end = other
+            elif self.is_after(other):
+                _start = other
+                _end = self.start
+        if _start and _end:
+            return DatePeriod(start=_start, end=_end)
+
     def is_after(self,
                  other: Union['DatePeriod', 'DatetimePeriod', datetime, date]
                  ) -> bool:
@@ -686,6 +750,11 @@ class DatePeriod(Period):
             raise ValueError(f"Provided object '{specific_time}' is not an instance of datetime.time or TimePeriod")
         return DatetimePeriod(start=_start, end=_end)
 
+    def as_datetime(self) -> 'DatetimePeriod':
+        """ Returns this DatePeriod as an instance of DatetimePeriod with the start and end hours set to midnight """
+        return DatetimePeriod(start=datetime.combine(self.start, time(0, 0, 0)),
+                              end=datetime.combine(self.end, time(23, 59, 59)))
+
 
 class DatetimePeriod(Period):
 
@@ -885,6 +954,35 @@ class DatetimePeriod(Period):
         elif isinstance(other, date):
             return other < self.start.date()
         return other.end <= self.start
+
+    def get_interim(self,
+                    other: Union['DatetimePeriod', datetime]
+                    ) -> Union['DatetimePeriod', None]:
+        """ Method returns the DatetimePeriod between the start/end of the provided period, if `other` is a
+        DatetimePeriod, or the DatetimePeriod between the point in time and the start/end of this period, depending on
+        whether the same is occurring before the start of this period or after the end of it.
+
+        This method is intended to be used when the provided `other` does not exist within and does not overlap (or is
+        being overlapped) by this period.
+        """
+        _start = None
+        _end = None
+        if isinstance(other, DatetimePeriod):
+            if self.is_before(other):
+                _start = self.end
+                _end = other.start
+            elif self.is_after(other):
+                _start = other.end
+                _end = self.start
+        elif isinstance(other, datetime):
+            if self.is_before(other):
+                _start = self.end
+                _end = other
+            elif self.is_after(other):
+                _start = other
+                _end = self.start
+        if  _start and _end:
+            return DatetimePeriod(start=_start, end=_end)
 
     def overlaps_with(self,
                       other: Union['TimePeriod', 'DatePeriod', 'DatetimePeriod']

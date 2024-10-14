@@ -468,6 +468,33 @@ class TestDatetimePeriod:
         with pytest.raises(TimeAmbiguityError):
             self.period.overlapped_by(self.other_period)
 
+    def test_get_interim(self):
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 1, 12, 0)
+        self.period = DatetimePeriod(start=self.start, end=self.end)
+        assert self.period.get_interim(datetime(2023, 12, 15, 13, 0)) == DatetimePeriod(
+            datetime(2023, 12, 15, 13, 0), datetime(2024, 1, 1, 8, 0)
+        )
+        assert self.period.get_interim(datetime(2024, 2, 20, 8, 0)) == DatetimePeriod(
+            datetime(2024, 1, 1, 12, 0), datetime(2024, 2, 20, 8, 0)
+        )
+
+        self.other_period = DatetimePeriod(
+            start=datetime(2023, 12, 15, 10, 0),
+            end=datetime(2023, 12, 30, 8, 0)
+        )
+        assert self.period.get_interim(self.other_period) == DatetimePeriod(datetime(2023, 12, 30, 8, 0),
+                                                                            datetime(2024, 1, 1, 8, 0)
+                                                                            )
+
+        self.other_period = DatetimePeriod(
+            start=datetime(2024, 1, 1, 12, 0, 5),
+            end=datetime(2024, 1, 1, 16, 0)
+        )
+        assert self.period.get_interim(self.other_period) == DatetimePeriod(datetime(2024, 1, 1, 12, 0, 0),
+                                                                            datetime(2024, 1, 1, 12, 0, 5)
+                                                                            )
+
     def test_get_overlap(self):
         # Same day period
         self.start = datetime(2024, 1, 1, 8, 0)
