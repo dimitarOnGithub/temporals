@@ -343,6 +343,28 @@ class TimePeriod(Period):
             start_time = other.end if isinstance(other, TimePeriod) else other.end.time()
             return TimePeriod(start=start_time, end=self.end)
 
+    def combine(self,
+                specific_date: Union['DatePeriod', date]
+                ) -> 'DatetimePeriod':
+        """ This method allows you to combine the TimePeriod with either a datetime.date or a DatePeriod object and
+        create a DatetimePeriod where:
+            - the start of the period is set to the start of this period as time and the start of the provided period,
+                or datetime.date, object as date;
+            - the end of the the period is set to the end of this period as time and the end of the provided period,
+                or datetime.date, object as date;
+        """
+        _start = None
+        _end = None
+        if isinstance(specific_date, date):
+            _start = datetime.combine(specific_date, self.start)
+            _end = datetime.combine(specific_date, self.end)
+        elif isinstance(specific_date, DatePeriod):
+            _start = datetime.combine(specific_date.start, self.start)
+            _end = datetime.combine(specific_date.end, self.end)
+        else:
+            raise ValueError(f"Provided object '{specific_date}' is not an instance of datetime.date or DatePeriod")
+        return DatetimePeriod(start=_start, end=_end)
+
 
 class DatePeriod(Period):
     """ The DatePeriod class is responsible for date periods containing a year, month and day. Instances of this class
@@ -649,6 +671,28 @@ class DatePeriod(Period):
         elif self.overlaps_with(other):
             start_date = other.end if isinstance(other, DatePeriod) else other.end.date()
             return DatePeriod(start=start_date, end=self.end)
+
+    def combine(self,
+                specific_time: Union['TimePeriod', time]
+                ) -> 'DatetimePeriod':
+        """ This method allows you to combine the DatePeriod with either a datetime.time or a TimePeriod object and
+        create a DatetimePeriod where:
+            - the start of the period is set to the start of this period as date and the start of the provided period,
+                or datetime.time, object as time;
+            - the end of the period is set to the end of this period as date and the end of the provided period,
+                or datetime.time, object as time;
+        """
+        _start = None
+        _end = None
+        if isinstance(specific_time, time):
+            _start = datetime.combine(self.start, specific_time)
+            _end = datetime.combine(self.end, specific_time)
+        elif isinstance(specific_time, TimePeriod):
+            _start = datetime.combine(self.start, specific_time.start)
+            _end = datetime.combine(self.end, specific_time.end)
+        else:
+            raise ValueError(f"Provided object '{specific_time}' is not an instance of datetime.time or TimePeriod")
+        return DatetimePeriod(start=_start, end=_end)
 
 
 class DatetimePeriod(Period):

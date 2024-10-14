@@ -1,6 +1,6 @@
 import pytest
 from datetime import time, date, datetime
-from temporals.periods import TimePeriod, DatetimePeriod
+from temporals.periods import TimePeriod, DatetimePeriod, DatePeriod
 
 
 class TestTimePeriod:
@@ -112,6 +112,23 @@ class TestTimePeriod:
         self.other_end = time(10, 0, 0)
         self.other_period = TimePeriod(start=self.other_start, end=self.other_end)
         assert self.period.is_after(self.other_period) is True
+
+    def test_combine(self):
+        self.start = time(8, 0)
+        self.end = time(12, 0)
+        self.period = TimePeriod(start=self.start, end=self.end)
+        assert self.period.combine(date(2024, 1, 1)) == DatetimePeriod(
+            start=datetime(2024, 1, 1, 8, 0),
+            end=datetime(2024, 1, 1, 12, 0)
+        )
+
+        self.other_start = date(2024, 1, 10)
+        self.other_end = date(2024, 1, 20)
+        self.other_period = DatePeriod(start=self.other_start, end=self.other_end)
+        assert self.period.combine(self.other_period) == DatetimePeriod(
+            start=datetime(2024, 1, 10, 8, 0),
+            end=datetime(2024, 1, 20, 12, 0)
+        )
 
     def test_overlaps(self):
         """
