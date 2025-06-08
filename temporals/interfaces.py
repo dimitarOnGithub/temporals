@@ -8,6 +8,13 @@ class AbstractPeriod(ABC):
     membership test operators (is, is not) via __contains__ """
 
     @abstractmethod
+    @property
+    def duration(self) -> 'AbstractDuration':
+        """ Returns the Duration of this period, see AbstractDuration at the bottom of this file; using a property
+        ensures that the value cannot be overridden by default
+        """
+
+    @abstractmethod
     def __eq__(self, other):
         """ Different implementations will contain different logic for determining whether this instance is equal to the
         provided one, one important thing to note is:
@@ -37,10 +44,6 @@ class AbstractPeriod(ABC):
         Period 2 exists completely within Period 1, so if you perform a membership test, True will be returned:
         >> period2 in period1 ? -> True
         """
-
-    @abstractmethod
-    def get_duration(self) -> 'AbstractDuration':
-        """ Returns the Duration of this period, see AbstractDuration at the bottom of this file """
 
     @abstractmethod
     def is_before(self, other) -> bool:
