@@ -24,9 +24,11 @@ class AbstractPeriod(ABC):
         ensures that the value cannot be overridden by default
         """
 
+    @abstractmethod
     def __repr__(self):
         return f"{self.__class__.__name__}(start={self.start.__repr__()}, end={self.end.__repr__()})"
 
+    @abstractmethod
     def __str__(self):
         """ Implementation must conform to ISO-8601 """
 
