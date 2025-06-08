@@ -24,6 +24,12 @@ class AbstractPeriod(ABC):
         ensures that the value cannot be overridden by default
         """
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}(start={self.start.__repr__()}, end={self.end.__repr__()})"
+
+    def __str__(self):
+        """ Implementation must conform to ISO-8601 """
+
     @abstractmethod
     def __eq__(self, other):
         """ Different implementations will contain different logic for determining whether this instance is equal to the
