@@ -9,6 +9,16 @@ class AbstractPeriod(ABC):
 
     @abstractmethod
     @property
+    def start(self):
+        """ Ensure instance remains read-only. Implementing a setter must return a new object """
+
+    @abstractmethod
+    @property
+    def end(self):
+        """ Ensure instance remains read-only. Implementing a setter must return a new object """
+
+    @abstractmethod
+    @property
     def duration(self) -> 'AbstractDuration':
         """ Returns the Duration of this period, see AbstractDuration at the bottom of this file; using a property
         ensures that the value cannot be overridden by default
@@ -164,6 +174,16 @@ class AbstractTimePeriod(AbstractPeriod):
     """
 
     @abstractmethod
+    @property
+    def start(self) -> time:
+        ...
+
+    @abstractmethod
+    @property
+    def end(self) -> time:
+        ...
+
+    @abstractmethod
     def is_before(self, other: Union['AbstractTimePeriod', time]) -> bool:
         ...
 
@@ -212,6 +232,16 @@ class AbstractDatePeriod(AbstractPeriod):
     """
 
     @abstractmethod
+    @property
+    def start(self) -> date:
+        ...
+
+    @abstractmethod
+    @property
+    def end(self) -> date:
+        ...
+
+    @abstractmethod
     def is_before(self, other: Union['AbstractDatePeriod', 'AbstractDateTimePeriod', datetime, date]) -> bool:
         ...
 
@@ -253,6 +283,16 @@ class AbstractDatePeriod(AbstractPeriod):
 
 class AbstractDateTimePeriod(AbstractPeriod):
     """ A period that contains a date and a time """
+
+    @abstractmethod
+    @property
+    def start(self) -> datetime:
+        ...
+
+    @abstractmethod
+    @property
+    def end(self) -> datetime:
+        ...
 
     @abstractmethod
     def is_before(self, other: Union['AbstractDatePeriod', 'AbstractDateTimePeriod', date, datetime]) -> bool:
