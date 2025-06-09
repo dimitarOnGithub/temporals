@@ -1,30 +1,27 @@
 from abc import ABC, abstractmethod
-from datetime import time, date, datetime
-from typing import Union
+from .period_duration import AbstractDuration
 
 
 class AbstractPeriod(ABC):
     """ Implementations of this class must provide logic for the 'equal' comparison, via __eq__ method, as well as the
     membership test operators (is, is not) via __contains__ """
 
-    @abstractmethod
     @property
+    @abstractmethod
     def start(self):
         """ Ensure instance remains read-only. Implementing a setter must return a new object """
 
-    @abstractmethod
     @property
+    @abstractmethod
     def end(self):
         """ Ensure instance remains read-only. Implementing a setter must return a new object """
 
-    @abstractmethod
     @property
+    @abstractmethod
     def duration(self) -> 'AbstractDuration':
-        """ Returns the Duration of this period, see AbstractDuration at the bottom of this file; using a property
-        ensures that the value cannot be overridden by default
+        """ Returns the Duration of this period; using a property ensures that the value cannot be overridden by default
         """
 
-    @abstractmethod
     def __repr__(self):
         return f"{self.__class__.__name__}(start={self.start.__repr__()}, end={self.end.__repr__()})"
 
@@ -69,8 +66,9 @@ class AbstractPeriod(ABC):
 
         1000 This period:   1400
         |====================|
-                                | <- `other`, instance of datetime.time
-                              1500
+                                | 1500
+                            Point in time
+
         This period ends before the `other`, thus True is returned
         """
 
@@ -80,7 +78,7 @@ class AbstractPeriod(ABC):
 
                         1000       This period:          1700
                         |==================================|
-                    | <- `other`, instance of datetime.time
+                    | <- `other`, an example time
                   0900
         This period starts after the `other`, thus True is returned
         """
@@ -97,7 +95,7 @@ class AbstractPeriod(ABC):
         1000       This period:          1700
         |==================================|
                                                 | 2000
-                                            Point in time
+                                         Point in time
 
         The returned TimePeriod will be from 1700 to 2000
         """
@@ -174,178 +172,3 @@ class AbstractPeriod(ABC):
         But if you want to obtain the same as relative to Period 2 instead:
         >> period2.get_disconnect(period1) -> 1200 to 1300
         """
-
-
-class AbstractTimePeriod(AbstractPeriod):
-    """ A period of time within a 24-hour day that does not overflow into the next day. Implementing periods must also
-    implement the `combine` method which allows a TimePeriod to be combined with a DatePeriod to create a DateTimePeriod
-    """
-
-    @abstractmethod
-    @property
-    def start(self) -> time:
-        ...
-
-    @abstractmethod
-    @property
-    def end(self) -> time:
-        ...
-
-    @abstractmethod
-    def is_before(self, other: Union['AbstractTimePeriod', time]) -> bool:
-        ...
-
-    @abstractmethod
-    def is_after(self, other: Union['AbstractTimePeriod', time]) -> bool:
-        ...
-
-    @abstractmethod
-    def get_interim(self, other: Union['AbstractTimePeriod', time]) -> Union['AbstractTimePeriod', None]:
-        ...
-
-    @abstractmethod
-    def overlaps_with(self, other: Union['AbstractTimePeriod', 'AbstractDateTimePeriod']) -> bool:
-        ...
-
-    @abstractmethod
-    def overlapped_by(self, other: Union['AbstractTimePeriod', 'AbstractDateTimePeriod']) -> bool:
-        ...
-
-    @abstractmethod
-    def get_overlap(self,
-                    other: Union['AbstractTimePeriod', 'AbstractDateTimePeriod']
-                    ) -> Union['AbstractTimePeriod', None]:
-        ...
-
-    @abstractmethod
-    def get_disconnect(self,
-                       other: Union['AbstractTimePeriod', 'AbstractDateTimePeriod']
-                       ) -> Union['AbstractTimePeriod', None]:
-        ...
-
-    @abstractmethod
-    def combine(self,
-                specific_date: Union['AbstractDatePeriod', date]
-                ) -> 'AbstractDateTimePeriod':
-        ...
-
-
-class AbstractDatePeriod(AbstractPeriod):
-    """ A date period that does not contain a specific time. Implementing periods must also implement two additional
-    methods:
-        combine - which allows combining the DatePeriod with a TimePeriod to create a DateTimePeriod
-    and
-        as_datetime - which creates a DateTimePeriod with its time values set to midnight for the start and 23:59 for
-                the end
-    """
-
-    @abstractmethod
-    @property
-    def start(self) -> date:
-        ...
-
-    @abstractmethod
-    @property
-    def end(self) -> date:
-        ...
-
-    @abstractmethod
-    def is_before(self, other: Union['AbstractDatePeriod', 'AbstractDateTimePeriod', datetime, date]) -> bool:
-        ...
-
-    @abstractmethod
-    def is_after(self, other: Union['AbstractDatePeriod', 'AbstractDateTimePeriod', datetime, date]) -> bool:
-        ...
-
-    @abstractmethod
-    def get_interim(self, other: Union['AbstractDatePeriod', date]) -> Union['AbstractDatePeriod', None]:
-        ...
-
-    @abstractmethod
-    def overlaps_with(self, other: Union['AbstractDatePeriod', 'AbstractDateTimePeriod']) -> bool:
-        ...
-
-    @abstractmethod
-    def overlapped_by(self, other: Union['AbstractDatePeriod', 'AbstractDateTimePeriod']) -> bool:
-        ...
-
-    @abstractmethod
-    def get_overlap(self,
-                    other: Union['AbstractDatePeriod', 'AbstractDateTimePeriod']) -> Union['AbstractDatePeriod', None]:
-        ...
-
-    @abstractmethod
-    def get_disconnect(self,
-                       other: Union['AbstractDatePeriod', 'AbstractDateTimePeriod']
-                       ) -> Union['AbstractDatePeriod', None]:
-        ...
-
-    @abstractmethod
-    def combine(self, specific_time: Union['AbstractTimePeriod', time]) -> 'AbstractDateTimePeriod':
-        ...
-
-    @abstractmethod
-    def as_datetime(self) -> 'AbstractDateTimePeriod':
-        ...
-
-
-class AbstractDateTimePeriod(AbstractPeriod):
-    """ A period that contains a date and a time """
-
-    @abstractmethod
-    @property
-    def start(self) -> datetime:
-        ...
-
-    @abstractmethod
-    @property
-    def end(self) -> datetime:
-        ...
-
-    @abstractmethod
-    def is_before(self, other: Union['AbstractDatePeriod', 'AbstractDateTimePeriod', date, datetime]) -> bool:
-        ...
-
-    @abstractmethod
-    def is_after(self, other: Union['AbstractDatePeriod', 'AbstractDateTimePeriod', date, datetime]) -> bool:
-        ...
-
-    @abstractmethod
-    def get_interim(self, other: Union['AbstractDateTimePeriod', datetime]) -> Union['AbstractDateTimePeriod', None]:
-        ...
-
-    @abstractmethod
-    def overlaps_with(self, other: Union['AbstractTimePeriod', 'AbstractDatePeriod', 'AbstractDateTimePeriod']) -> bool:
-        ...
-
-    @abstractmethod
-    def overlapped_by(self, other: Union['AbstractTimePeriod', 'AbstractDatePeriod', 'AbstractDateTimePeriod']) -> bool:
-        ...
-
-    @abstractmethod
-    def get_overlap(self,
-                    other: Union['AbstractTimePeriod', 'AbstractDatePeriod', 'AbstractDateTimePeriod']
-                    ) -> Union['AbstractTimePeriod', 'AbstractDatePeriod', 'AbstractDateTimePeriod', None]:
-        ...
-
-    @abstractmethod
-    def get_disconnect(self,
-                       other: Union['AbstractTimePeriod', 'AbstractDatePeriod', 'AbstractDateTimePeriod']
-                       ) -> Union['AbstractTimePeriod', 'AbstractDatePeriod', 'AbstractDateTimePeriod', None]:
-        ...
-
-
-class AbstractDuration(ABC):
-    """ A representation of the duration of each period """
-
-    @abstractmethod
-    def isoformat(self, fold: bool) -> str:
-        """ Implementing methods must return a string value that conforms to the ISO-8601 standard:
-        https://en.wikipedia.org/wiki/ISO_8601#Durations
-
-        Additionally, the `fold` parameter may be predefined/provided, when True, zero values should be omitted
-        """
-
-    @abstractmethod
-    def format(self, pattern):
-        """ A helper method that allows the user to provide a specific pattern for the output """
