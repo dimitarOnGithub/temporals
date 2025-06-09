@@ -21,7 +21,7 @@ from .base_period import AbstractPeriod
 from .time_period import AbstractTimePeriod
 from .date_period import AbstractDatePeriod
 from .datetime_period import AbstractDateTimePeriod
-from .duration import AbstractDuration
+from .period_duration import AbstractDuration
 
 
 __all__ = [

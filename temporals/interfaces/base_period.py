@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from .duration import AbstractDuration
+from .period_duration import AbstractDuration
 
 
 class AbstractPeriod(ABC):
