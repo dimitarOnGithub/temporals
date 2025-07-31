@@ -1,34 +1,14 @@
-from datetime import time, date, datetime, timedelta
+from . import interface
+import calendar
 from typing import Union
-from .exceptions import TimeAmbiguityError
+from datetime import time, date, datetime, timedelta
+from temporals.interfaces import AbstractDuration
+from temporals.duration import Duration
+from .utils import check_existence
+from temporals.exceptions import TimeAmbiguityError
 
 
-class Period:
-
-    def __init__(self,
-                 start: Union[time, date, datetime],
-                 end: Union[time, date, datetime]
-                 ):
-        if start > end:
-            raise ValueError('The start of a period cannot be before its end')
-        self.start = start
-        self.end = end
-        self.duration = Duration(period=self)
-
-    def __eq__(self, other):
-        raise NotImplementedError('Period class does not contain __eq__ method, inheriting classes must override it')
-
-    def __contains__(self, item):
-        raise NotImplementedError('Period class does not contain __eq__ method, inheriting classes must override it')
-
-    def __repr__(self):
-        return f"{self.__class__.__name__}(start={self.start.__repr__()}, end={self.end.__repr__()})"
-
-    def __str__(self):
-        return f'{self.start.isoformat()}/{self.end.isoformat()}'
-
-
-class TimePeriod(Period):
+class TimePeriod(interface.PyTimePeriod):
     """ The TimePeriod class is responsible for time periods within a 24-hour day. Instances of this class offer the
     'equal' comparison (see __eq__ below), as well as the membership (is, is not) test operators (see __contains__)
     below.
@@ -42,7 +22,48 @@ class TimePeriod(Period):
             raise ValueError(f"Provided value '{start}' for parameter 'start' is not an instance of time")
         if not isinstance(end, time):
             raise ValueError(f"Provided value '{end}' for parameter 'end' is not an instance of time")
-        super().__init__(start, end)
+        if start >= end:
+            raise ValueError(f"The start of a period cannot be equal or after its end; values provided: start={start}, "
+                             f"end={end}")
+        self._start = start
+        self._end = end
+        # OOTB datetime.time does not support operations, so we'll turn it into a timedelta
+        _start = timedelta(hours=start.hour,
+                           minutes=start.minute,
+                           seconds=start.second)
+        _end = timedelta(hours=end.hour,
+                         minutes=end.minute,
+                         seconds=end.second)
+        td: timedelta = _end - _start
+        total = int(td.total_seconds())
+        seconds = end.second - start.second
+        minutes = end.minute - start.minute
+        hours = end.hour - start.hour
+        if seconds < 0:
+            minutes -= 1
+            seconds = 60 + seconds
+        if minutes < 0:
+            hours -= 1
+            minutes = 60 + minutes
+        if hours < 0:
+            hours = 0
+        self._duration = Duration(total_seconds=total, years=0, months=0, days=0, hours=hours, minutes=minutes,
+                                  seconds=seconds)
+
+    @property
+    def start(self):
+        return self._start
+
+    @property
+    def end(self):
+        return self._end
+
+    @property
+    def duration(self) -> 'AbstractDuration':
+        return self._duration
+
+    def __str__(self):
+        return f"{self.start.isoformat()}/{self.end.isoformat()}"
 
     def __eq__(self, other):
         """ Equality can only be determined between instances of this class, as well as the DatetimePeriod class, since
@@ -56,10 +77,10 @@ class TimePeriod(Period):
             get_overlap
             get_disconnect
         """
-        if isinstance(other, DatetimePeriod):
+        if isinstance(other, interface.PyDateTimePeriod):
             return (self.start == other.start.time()
                     and self.end == other.end.time())
-        if isinstance(other, TimePeriod):
+        if isinstance(other, interface.PyTimePeriod):
             return (self.start == other.start
                     and self.end == other.end)
         return False
@@ -94,12 +115,12 @@ class TimePeriod(Period):
             overlap
             disconnect
         """
-        if isinstance(item, TimePeriod):
+        if isinstance(item, interface.PyTimePeriod):
             """ Only return True if the start and end times of `item` are within the actual time duration of this 
             period.
             """
             return self.start <= item.start and item.end <= self.end
-        if isinstance(item, DatetimePeriod):
+        if isinstance(item, interface.PyDateTimePeriod):
             return item.start.time() >= self.start and item.end.time() <= self.end
         if isinstance(item, datetime):
             item = item.time()
@@ -107,7 +128,7 @@ class TimePeriod(Period):
             return self.start <= item <= self.end
         return False
 
-    def is_before(self, other: Union['TimePeriod', time]) -> bool:
+    def is_before(self, other: Union['interface.PyTimePeriod', time]) -> bool:
         """ Test if this period ends before the provided `other` value. This check will evaluate as True in the
         following scenario:
 
@@ -125,11 +146,11 @@ class TimePeriod(Period):
         """
         if isinstance(other, time):
             return self.end <= other
-        elif isinstance(other, TimePeriod):
+        elif isinstance(other, interface.PyTimePeriod):
             return self.end <= other.start
         return False
 
-    def is_after(self, other: Union['TimePeriod', time]) -> bool:
+    def is_after(self, other: Union['interface.PyTimePeriod', time]) -> bool:
         """ Test if this period starts after the provided `other` value. This check will evaluate as True in the
         following scenario:
 
@@ -148,12 +169,12 @@ class TimePeriod(Period):
         """
         if isinstance(other, time):
             return other <= self.start
-        elif isinstance(other, TimePeriod):
+        elif isinstance(other, interface.PyTimePeriod):
             return other.end <= self.start
         return False
 
     def get_interim(self,
-                    other: Union['TimePeriod', time]) -> Union['TimePeriod', None]:
+                    other: Union['interface.PyTimePeriod', time]) -> Union['interface.PyTimePeriod', None]:
         """ Method returns the TimePeriod between the start/end of the provided period, if `other` is a TimePeriod,
         or the TimePeriod between the point in time and the start/end of this period, depending on whether the same is
         occurring before the start of this period or after the end of it.
@@ -189,7 +210,7 @@ class TimePeriod(Period):
             return TimePeriod(start=_start, end=_end)
 
     def overlaps_with(self,
-                      other: Union['TimePeriod', 'DatetimePeriod']
+                      other: Union['interface.PyTimePeriod', 'interface.PyDateTimePeriod']
                       ) -> bool:
         """ Test if this period overlaps with another period that has begun before this one. This check will evaluate
         as True in the following scenario:
@@ -218,12 +239,12 @@ class TimePeriod(Period):
         use the `in` membership test:
         >>> this_period in other_period
         """
-        other_start: time = None
-        other_end: time = None
-        if isinstance(other, TimePeriod):
+        other_start: time = None  # type: ignore
+        other_end: time = None  # type: ignore
+        if isinstance(other, interface.PyTimePeriod):
             other_start = other.start
             other_end = other.end
-        if isinstance(other, DatetimePeriod):
+        if isinstance(other, interface.PyDateTimePeriod):
             other_start = other.start.time()
             other_end = other.end.time()
         if not other_end < self.start and other_start < self.start and other_end < self.end:
@@ -231,7 +252,7 @@ class TimePeriod(Period):
         return False
 
     def overlapped_by(self,
-                      other: Union['TimePeriod', 'DatetimePeriod']
+                      other: Union['interface.PyTimePeriod', 'interface.PyDateTimePeriod']
                       ) -> bool:
         """ Test if this period is overlapped by the other period. This check will evaluate True in the following
         scenario:
@@ -259,12 +280,12 @@ class TimePeriod(Period):
         use the `in` membership test:
         >>> this_period in other_period
         """
-        other_start: time = None
-        other_end: time = None
-        if isinstance(other, TimePeriod):
+        other_start: time = None  # type: ignore
+        other_end: time = None  # type: ignore
+        if isinstance(other, interface.PyTimePeriod):
             other_start = other.start
             other_end = other.end
-        if isinstance(other, DatetimePeriod):
+        if isinstance(other, interface.PyDateTimePeriod):
             other_start = other.start.time()
             other_end = other.end.time()
         if not self.end < other_start and self.start < other_start and self.end < other_end:
@@ -272,8 +293,8 @@ class TimePeriod(Period):
         return False
 
     def get_overlap(self,
-                    other: Union['TimePeriod', 'DatetimePeriod']
-                    ) -> Union['TimePeriod', None]:
+                    other: Union['interface.PyTimePeriod', 'interface.PyDateTimePeriod']
+                    ) -> Union['interface.PyTimePeriod', None]:
         """ Method returns the overlapping interval between the two periods as a new TimePeriod instance
 
         >>> period1_start = time(8, 0, 0)
@@ -311,21 +332,21 @@ class TimePeriod(Period):
         >>> period2.get_overlap(period1)
         TimePeriod(start=datetime.time(10, 0), end=datetime.time(12, 0))
         """
-        if not isinstance(other, TimePeriod) and not isinstance(other, DatetimePeriod):
+        if not isinstance(other, interface.PyTimePeriod) and not isinstance(other, interface.PyDateTimePeriod):
             raise TypeError(f"Cannot perform temporal operations with instances of type '{type(other)}'")
-        if isinstance(other, DatetimePeriod):
+        if isinstance(other, interface.PyTimePeriod):
             return other.get_overlap(self)
-        # TODO: refactor this
         if self.overlaps_with(other):
-            end_time = other.end if isinstance(other, TimePeriod) else other.end.time()
+            end_time = other.end if isinstance(other, interface.PyTimePeriod) else other.end.time()
             return TimePeriod(start=self.start, end=end_time)
         elif self.overlapped_by(other):
-            start_time = other.start if isinstance(other, TimePeriod) else other.start.time()
+            start_time = other.start if isinstance(other, interface.PyTimePeriod) else other.start.time()
             return TimePeriod(start=start_time, end=self.end)
+        return None
 
     def get_disconnect(self,
-                       other: Union['TimePeriod', 'DatetimePeriod']
-                       ) -> Union['TimePeriod', None]:
+                       other: Union['interface.PyTimePeriod', 'interface.PyDateTimePeriod']
+                       ) -> Union['interface.PyTimePeriod', None]:
         """ Method returns the disconnect interval from the point of view of the invoking period. This means the time
         disconnect from the start of this period until the start of the period to which this period is being compared
         to. Since the span of time is relative to each of the two periods, this method will always return different
@@ -361,18 +382,19 @@ class TimePeriod(Period):
         >>> period2.get_disconnect(period1)
         TimePeriod(start=datetime.time(12, 0), end=datetime.time(13, 0))
         """
-        if not isinstance(other, TimePeriod) and not isinstance(other, DatetimePeriod):
+        if not isinstance(other, interface.PyTimePeriod) and not isinstance(other, interface.PyDateTimePeriod):
             raise TypeError(f"Cannot perform temporal operations with instances of type '{type(other)}'")
         if self.overlapped_by(other):
-            end_time = other.start if isinstance(other, TimePeriod) else other.start.time()
+            end_time = other.start if isinstance(other, interface.PyTimePeriod) else other.start.time()
             return TimePeriod(start=self.start, end=end_time)
         elif self.overlaps_with(other):
-            start_time = other.end if isinstance(other, TimePeriod) else other.end.time()
+            start_time = other.end if isinstance(other, interface.PyTimePeriod) else other.end.time()
             return TimePeriod(start=start_time, end=self.end)
+        return None
 
     def combine(self,
-                specific_date: Union['DatePeriod', date]
-                ) -> 'DatetimePeriod':
+                specific_date: Union['interface.PyDatePeriod', date]
+                ) -> 'interface.PyDateTimePeriod':
         """ This method allows you to combine the TimePeriod with either a datetime.date or a DatePeriod object and
         create a DatetimePeriod where:
             - the start of the period is set to the start of this period as time and the start of the provided period,
@@ -393,7 +415,7 @@ class TimePeriod(Period):
         return DatetimePeriod(start=_start, end=_end)
 
 
-class DatePeriod(Period):
+class DatePeriod(interface.PyDatePeriod):
     """ The DatePeriod class is responsible for date periods containing a year, month and day. Instances of this class
     offer the 'equal' comparison (see __eq__ below), as well as the membership (is, is not) test operators
     (see __contains__) below.
@@ -407,7 +429,63 @@ class DatePeriod(Period):
             raise ValueError(f"Provided value '{start}' for parameter 'start' is not an instance of datetime.date")
         if not isinstance(end, date) or isinstance(end, datetime):
             raise ValueError(f"Provided value '{end}' for parameter 'end' is not an instance of datetime.date")
-        super().__init__(start, end)
+        if start >= end:
+            raise ValueError(f"The start of a period cannot be equal or after its end; values provided: start={start}, "
+                             f"end={end}")
+        self._start = start
+        self._end = end
+        # The total duration in seconds
+        _total: int = 0
+        # First calculate the years difference, collect the days and subtract them from the total amount of days
+        _years: int = end.year - start.year
+        # If the month of the end date is before the month of the start date, remove 1 year from the total count as it
+        # wasn't one full year
+        if end.month < start.month:
+            _years = _years - 1
+        leap_days = calendar.leapdays(start.year, end.year)
+        total_days = (end - start).days
+        # Turn all the days into seconds and store them in the self._total attr
+        _total += total_days * 24 * 60 * 60
+        # Remove the total amount of years from the days pool
+        days_left = (total_days - (_years * 365)) - leap_days
+        print(f"Days left after removing years: {days_left}")
+        _months: int = 0
+        _year = start.year
+        next_month = start.month + _months
+        days_to_go = abs(days_left)
+        while days_to_go > 0:
+            if next_month > 12:
+                next_month = 1
+                _year += 1
+            days_in_month = calendar.monthrange(_year, next_month)[1]
+            print(f"Days in month={next_month}: {days_in_month}")
+            if days_to_go - days_in_month >= 0:
+                _months += 1
+                next_month += 1
+                days_to_go -= days_in_month
+            else:
+                break
+            print(f"Days left: {days_to_go}")
+        print(f"Total months added: {_months}")
+        print(f"Days left: {days_to_go}")
+        _days: int = days_to_go
+        self._duration = Duration(total_seconds=_total, years=_years, months=_months, days=_days, hours=0, minutes=0,
+                                  seconds=0)
+
+    @property
+    def start(self) -> date:
+        return self._start
+
+    @property
+    def end(self) -> date:
+        return self._end
+
+    @property
+    def duration(self) -> 'AbstractDuration':
+        return self._duration
+
+    def __str__(self):
+        return f"{self.start.isoformat()}/{self.end.isoformat()}"
 
     def __eq__(self, other):
         """ Equality can only be determined between instances of this class, as well as the DatetimePeriod class, since
@@ -421,10 +499,10 @@ class DatePeriod(Period):
             get_overlap
             get_disconnect
         """
-        if isinstance(other, DatetimePeriod):
+        if isinstance(other, interface.PyDateTimePeriod):
             return (self.start == other.start.date()
                     and self.end == other.end.date())
-        if isinstance(other, DatePeriod):
+        if isinstance(other, interface.PyDatePeriod):
             return (self.start == other.start
                     and self.end == other.end)
         return False
@@ -459,12 +537,12 @@ class DatePeriod(Period):
             get_overlap
             get_disconnect
         """
-        if isinstance(item, DatePeriod):
+        if isinstance(item, interface.PyDatePeriod):
             """ Only return True if the start and end times of `item` are within the actual time duration of this 
             period.
             """
             return self.start <= item.start and item.end <= self.end
-        if isinstance(item, DatetimePeriod):
+        if isinstance(item, interface.PyDateTimePeriod):
             return item.start.date() >= self.start and item.end.date() <= self.end
         if isinstance(item, datetime):
             item = item.date()
@@ -473,7 +551,7 @@ class DatePeriod(Period):
         return False
 
     def is_before(self,
-                  other: Union['DatePeriod', 'DatetimePeriod', datetime, date]
+                  other: Union['interface.PyDatePeriod', 'interface.PyDateTimePeriod', datetime, date]
                   ) -> bool:
         """ Test if this period is ending before another one begins. This check will evaluate as True in the
         following scenario:
@@ -485,10 +563,9 @@ class DatePeriod(Period):
         Since dates do not distinguish between specific hours, periods sharing the same start-end date, or vice versa,
         are considered overlapping.
         """
-        _value: date = None
-        if isinstance(other, DatePeriod):
+        if isinstance(other, interface.PyDatePeriod):
             _value = other.start
-        elif isinstance(other, DatetimePeriod):
+        elif isinstance(other, interface.PyDateTimePeriod):
             _value = other.start.date()
         elif isinstance(other, datetime):
             _value = other.date()
@@ -497,8 +574,8 @@ class DatePeriod(Period):
         return self.end < _value
 
     def get_interim(self,
-                    other: Union['DatePeriod', date]
-                    ) -> Union['DatePeriod', None]:
+                    other: Union['interface.PyDatePeriod', date]
+                    ) -> Union['interface.PyDatePeriod', None]:
         """ Method returns the DatePeriod between the start/end of the provided period, if `other` is a DatePeriod,
         or the DatePeriod between the point in time and the start/end of this period, depending on whether the same is
         occurring before the start of this period or after the end of it.
@@ -508,7 +585,7 @@ class DatePeriod(Period):
         """
         _start = None
         _end = None
-        if isinstance(other, DatePeriod):
+        if isinstance(other, interface.PyDatePeriod):
             if self.is_before(other):
                 _start = self.end
                 _end = other.start
@@ -524,9 +601,10 @@ class DatePeriod(Period):
                 _end = self.start
         if _start and _end:
             return DatePeriod(start=_start, end=_end)
+        return None
 
     def is_after(self,
-                 other: Union['DatePeriod', 'DatetimePeriod', datetime, date]
+                 other: Union['interface.PyDatePeriod', 'interface.PyDateTimePeriod', datetime, date]
                  ) -> bool:
         """ Test if this period is starting after another one ends. This check will evaluate as True in the
         following scenario:
@@ -538,10 +616,9 @@ class DatePeriod(Period):
         Since dates do not distinguish between specific hours, periods sharing the same start-end date, or vice versa,
         are considered overlapping.
         """
-        _value: date = None
-        if isinstance(other, DatePeriod):
+        if isinstance(other, interface.PyDatePeriod):
             _value = other.end
-        elif isinstance(other, DatetimePeriod):
+        elif isinstance(other, interface.PyDateTimePeriod):
             _value = other.end.date()
         elif isinstance(other, datetime):
             _value = other.date()
@@ -550,7 +627,7 @@ class DatePeriod(Period):
         return _value < self.start
 
     def overlaps_with(self,
-                      other: Union['DatePeriod', 'DatetimePeriod']
+                      other: Union['interface.PyDatePeriod', 'interface.PyDateTimePeriod']
                       ) -> bool:
         """ Test if this period overlaps with another period that has begun before this one. This check will evaluate
         as True in the following scenario:
@@ -579,20 +656,22 @@ class DatePeriod(Period):
         use the `in` membership test:
         >>> this_period in other_period
         """
-        other_start: date = None
-        other_end: date = None
-        if isinstance(other, DatePeriod):
+        other_start: date = None  # type: ignore
+        other_end: date = None  # type: ignore
+        if isinstance(other, interface.PyDatePeriod):
             other_start = other.start
             other_end = other.end
-        if isinstance(other, DatetimePeriod):
+        if isinstance(other, interface.PyDateTimePeriod):
             other_start = other.start.date()
             other_end = other.end.date()
+        if other_start is None or other_end is None:
+            return False
         if not other_end < self.start and other_start < self.start and other_end < self.end:
             return True
         return False
 
     def overlapped_by(self,
-                      other: Union['DatePeriod', 'DatetimePeriod']
+                      other: Union['interface.PyDatePeriod', 'interface.PyDateTimePeriod']
                       ) -> bool:
         """ Test if this period is overlapped by the other period. This check will evaluate True in the following
         scenario:
@@ -620,21 +699,23 @@ class DatePeriod(Period):
         use the `in` membership test:
         >>> this_period in other_period
         """
-        other_start: date = None
-        other_end: date = None
-        if isinstance(other, DatePeriod):
+        other_start: date = None  # type: ignore
+        other_end: date = None  # type: ignore
+        if isinstance(other, interface.PyDatePeriod):
             other_start = other.start
             other_end = other.end
-        if isinstance(other, DatetimePeriod):
+        if isinstance(other, interface.PyDateTimePeriod):
             other_start = other.start.date()
             other_end = other.end.date()
+        if other_start is None or other_end is None:
+            return False
         if not self.end < other_start and self.start < other_start and self.end < other_end:
             return True
         return False
 
     def get_overlap(self,
-                    other: Union['DatePeriod', 'DatetimePeriod']
-                    ) -> Union['DatePeriod', None]:
+                    other: Union['interface.PyDatePeriod', 'interface.PyDateTimePeriod']
+                    ) -> Union['interface.PyDatePeriod', None]:
         """ Method returns the overlapping interval between the two periods as a new DatePeriod instance
 
         >>> period1_start = date(2024, 1, 1)
@@ -672,18 +753,19 @@ class DatePeriod(Period):
         >>> period2.get_overlap(period1)
         TimePeriod(start=datetime.time(10, 0), end=datetime.time(12, 0))
         """
-        if not isinstance(other, DatePeriod) and not isinstance(other, DatetimePeriod):
+        if not isinstance(other, interface.PyDatePeriod) and not isinstance(other, interface.PyDateTimePeriod):
             raise TypeError(f"Cannot perform temporal operations with instances of type '{type(other)}'")
         if self.overlaps_with(other):
-            end_date = other.end if isinstance(other, DatePeriod) else other.end.date()
+            end_date = other.end if isinstance(other, interface.PyDatePeriod) else other.end.date()
             return DatePeriod(start=self.start, end=end_date)
         elif self.overlapped_by(other):
-            start_date = other.start if isinstance(other, DatePeriod) else other.start.date()
+            start_date = other.start if isinstance(other, interface.PyDatePeriod) else other.start.date()
             return DatePeriod(start=start_date, end=self.end)
+        return None
 
     def get_disconnect(self,
-                       other: Union['DatePeriod', 'DatetimePeriod']
-                       ) -> Union['DatePeriod', None]:
+                       other: Union['interface.PyDatePeriod', 'interface.PyDateTimePeriod']
+                       ) -> Union['interface.PyDatePeriod', None]:
         """ Method returns the disconnect interval from the point of view of the invoking period. This means the time
         disconnect from the start of this period until the start of the period to which this period is being compared
         to. Since the span of time is relative to each of the two periods, this method will always return different
@@ -719,18 +801,19 @@ class DatePeriod(Period):
         >>> period2.get_disconnect(period1)
         DatePeriod(start=datetime.date(2024, 1, 10), end=datetime.date(2024, 1, 15))
         """
-        if not isinstance(other, DatePeriod) and not isinstance(other, DatetimePeriod):
+        if not isinstance(other, interface.PyDatePeriod) and not isinstance(other, interface.PyDateTimePeriod):
             raise TypeError(f"Cannot perform temporal operations with instances of type '{type(other)}'")
         if self.overlapped_by(other):
-            end_date = other.start if isinstance(other, DatePeriod) else other.start.date()
+            end_date = other.start if isinstance(other, interface.PyDatePeriod) else other.start.date()
             return DatePeriod(start=self.start, end=end_date)
         elif self.overlaps_with(other):
-            start_date = other.end if isinstance(other, DatePeriod) else other.end.date()
+            start_date = other.end if isinstance(other, interface.PyDatePeriod) else other.end.date()
             return DatePeriod(start=start_date, end=self.end)
+        return None
 
     def combine(self,
-                specific_time: Union['TimePeriod', time]
-                ) -> 'DatetimePeriod':
+                specific_time: Union['interface.PyTimePeriod', time]
+                ) -> 'interface.PyDateTimePeriod':
         """ This method allows you to combine the DatePeriod with either a datetime.time or a TimePeriod object and
         create a DatetimePeriod where:
             - the start of the period is set to the start of this period as date and the start of the provided period,
@@ -743,20 +826,20 @@ class DatePeriod(Period):
         if isinstance(specific_time, time):
             _start = datetime.combine(self.start, specific_time)
             _end = datetime.combine(self.end, specific_time)
-        elif isinstance(specific_time, TimePeriod):
+        elif isinstance(specific_time, interface.PyTimePeriod):
             _start = datetime.combine(self.start, specific_time.start)
             _end = datetime.combine(self.end, specific_time.end)
         else:
             raise ValueError(f"Provided object '{specific_time}' is not an instance of datetime.time or TimePeriod")
         return DatetimePeriod(start=_start, end=_end)
 
-    def as_datetime(self) -> 'DatetimePeriod':
+    def as_datetime(self) -> 'interface.PyDateTimePeriod':
         """ Returns this DatePeriod as an instance of DatetimePeriod with the start and end hours set to midnight """
         return DatetimePeriod(start=datetime.combine(self.start, time(0, 0, 0)),
                               end=datetime.combine(self.end, time(23, 59, 59)))
 
 
-class DatetimePeriod(Period):
+class DatetimePeriod(interface.PyDateTimePeriod):
 
     def __init__(self,
                  start: datetime,
@@ -768,7 +851,87 @@ class DatetimePeriod(Period):
         if not isinstance(end, datetime):
             raise ValueError(f"Provided value '{end}' for parameter 'end' is not an instance of "
                              f"datetime.datetime")
-        super().__init__(start, end)
+        if start >= end:
+            raise ValueError(f"The start of a period cannot be equal or after its end; values provided: start={start}, "
+                             f"end={end}")
+        self._start = check_existence(start)
+        self._end = check_existence(end)
+        # The total duration in seconds
+        self._total: int = 0
+        self._seconds = end.second - start.second
+        self._minutes = end.minute - start.minute
+        self._hours = end.hour - start.hour
+        if self._seconds < 0:
+            self._minutes -= 1
+            self._seconds = 60 - abs(self._seconds)
+        elif self._seconds >= 60:
+            self._minutes += 1
+            self._seconds = 60 - self._seconds
+        self._total += self._seconds
+        if self._minutes < 0:
+            self._hours -= 1
+            self._minutes = 60 - abs(self._minutes)
+        elif self._minutes >= 60:
+            self._hours += 1
+            self._minutes = 60 - self._minutes
+        self._total += self._minutes * 60
+        adjustment_days = 0
+        if self._hours <= 0:
+            self._hours = 24 - abs(self._hours)
+            adjustment_days = -1
+        elif self._hours >= 24:
+            self._hours = 24 - self._hours
+            adjustment_days = 1
+        self._total += self._hours * 60
+        # First calculate the years difference, collect the days and subtract them from the total amount of days
+        self._years: int = end.year - start.year
+        # If the month of the end date is before the month of the start date, remove 1 year from the total count as it
+        # wasn't one full year
+        if end.month < start.month:
+            self._years = self._years - 1
+        leap_days = calendar.leapdays(start.year, end.year)
+        total_days = (end - start).days + adjustment_days
+        # Remove the total amount of years from the days pool
+        days_left = (total_days - (self._years * 365)) - leap_days
+        print(f"Days left after removing years: {days_left}")
+        self._months: int = 0
+        _year = start.year
+        next_month = start.month + self._months
+        while days_left > 0:
+            if next_month > 12:
+                next_month = 1
+                _year += 1
+            days_in_month = calendar.monthrange(_year, next_month)[1]
+            if days_left - days_in_month >= 0:
+                self._months += 1
+                next_month += 1
+                days_left -= days_in_month
+                self._total += days_in_month * 86400
+            else:
+                break
+            print(f"Days left: {days_left}")
+        print(f"Total months added: {self._months}")
+        print(f"Days left: {days_left}")
+        self._days: int = days_left
+        if self._days < 0:
+            self._days = 0
+        self._total += self._days * 86400
+
+    @property
+    def start(self) -> datetime:
+        return self._start
+
+    @property
+    def end(self) -> datetime:
+        return self._end
+
+    @property
+    def duration(self) -> 'AbstractDuration':
+        return Duration(total_seconds=self._total, years=self._years, months=self._months, days=self._days,
+                        hours=self._hours, minutes=self._minutes, seconds=self._seconds)
+
+    def __str__(self):
+        return f"{self.start.isoformat()}/{self.end.isoformat()}"
 
     def _time_repeats(self,
                       _t: Union[time, TimePeriod]) -> bool:
@@ -1233,122 +1396,27 @@ class DatetimePeriod(Period):
                 _end = self.end
         if period_to_use and _start and _end:
             return period_to_use(start=_start, end=_end)
+        return None
 
 
-class Duration:
+class WallClockPeriod(DatetimePeriod, interface.PyWallClockPeriod):
 
-    def __init__(self,
-                 *,
-                 period: Period = None,
-                 start: Union[time, date, datetime] = None,
-                 end: Union[time, date, datetime] = None):
-        if period:
-            if isinstance(period, Period) or issubclass(type(period), Period):
-                self.period: Period = period
-                self.start = period.start
-                self.end = period.end
-            else:
-                raise ValueError(f"Provided object '{period}' is not an instance or child of {Period}")
-        if start and end:
-            self.period = None
-            if not isinstance(start, (time, date, datetime)):
-                raise ValueError(f"Provided value '{start}' for start is not an instance of datetime.time, "
-                                 f"datetime.date or datetime.datetime")
-            self.start = start
-            if not isinstance(end, (time, date, datetime)):
-                raise ValueError(f"Provided value '{end}' for end is not an instance of datetime.time, "
-                                 f"datetime.date or datetime.datetime")
-            self.end = end
-        if isinstance(self.start, time) and isinstance(self.end, time):
-            # OOTB datetime.time does not support operations, so we'll turn it into a timedelta
-            _start = timedelta(hours=self.start.hour,
-                               minutes=self.start.minute,
-                               seconds=self.start.second)
-            _end = timedelta(hours=self.end.hour,
-                             minutes=self.end.minute,
-                             seconds=self.end.second)
-            self.timedelta = _end - _start
-        else:
-            self.timedelta = self.end - self.start
-        self.seconds: int = 0
-        self.minutes: int = 0
-        self.hours: int = 0
-        self.days: int = 0
-        self.weeks: int = 0
-        self.months: int = 0
-        self.years: int = 0
-        self._calculate_period()
+    def __init__(self, start: datetime, end: datetime):
+        super().__init__(start, end)
 
-    def _calculate_period(self):
-        self.seconds: int = int(self.timedelta.total_seconds())
-        self.minutes: int = self.seconds // 60
-        if self.minutes >= 1:
-            self.seconds = int(self.timedelta.total_seconds() - (self.minutes * 60))
-        if self.minutes // 60 >= 1:
-            self.hours = self.minutes // 60
-            self.minutes = self.minutes - (self.hours * 60)
-        if self.hours // 24 >= 1:
-            self.days = self.hours // 24
-            self.hours = self.hours - (self.days * 24)
-        if self.days // 7 >= 1:
-            self.weeks = self.days // 7
-            self.days = self.days - (self.weeks * 7)
-        if self.weeks // 4 >= 1:
-            self.months = self.weeks // 4
-            self.weeks = self.weeks - (self.months * 4)
-        if self.months // 12 >= 1:
-            self.years = self.months // 12
-            self.months = self.months - (self.years * 12)
 
-    def __str__(self):
-        return self.isoformat(fold=False)
+class AbsolutePeriod(DatetimePeriod, interface.PyAbsolutePeriod):
 
-    def __repr__(self):
-        if self.period:
-            return f'Duration(period={self.period.__repr__()})'
-        else:
-            return f'Duration(start={self.start.__repr__()}, end={self.end.__repr__()})'
+    def __init__(self, start: datetime, end: datetime):
+        super().__init__(start, end)
 
-    def isoformat(self, fold=True):
-        """ This method returns the duration in an ISO-8601 (https://en.wikipedia.org/wiki/ISO_8601#Durations) format.
-        Optional parameter `fold` can be set to False (True by default) to display even the empty elements of the
-        duration.
-
-        TODO: There must be a more intelligent way to do that
-        """
-        _rep = "P"
-        if self.years or not fold:
-            _rep = f"{_rep}{self.years}Y"
-        if self.months or not fold:
-            _rep = f"{_rep}{self.months}M"
-        if self.weeks or not fold:
-            _rep = f"{_rep}{self.weeks}W"
-        if self.days or not fold:
-            _rep = f"{_rep}{self.days}D"
-        # From now on, it's time elements, so we must append "T"
-        if (self.hours or self.minutes or self.seconds) or not fold:
-            _rep = f"{_rep}T"
-            if self.hours or not fold:
-                _rep = f"{_rep}{self.hours}H"
-            if self.minutes or not fold:
-                _rep = f"{_rep}{self.minutes}M"
-            if self.seconds or not fold:
-                _rep = f"{_rep}{self.seconds}S"
-        return _rep
-
-    def format(self, pattern: str):
-        """ Offers a way to format the representation of this Duration similar to datetime's strftime. In the _map
-        dictionary below you can see which characters will be replaced by which values."""
-        _map = {
-            '%Y': self.years,
-            '%m': self.months,
-            '%W': self.weeks,
-            '%d': self.days,
-            '%H': self.hours,
-            '%M': self.minutes,
-            '%S': self.seconds
-        }
-        for key, value in _map.items():
-            if key in pattern:
-                pattern = pattern.replace(key, str(value))
-        return pattern
+    @property
+    def duration(self) -> 'AbstractDuration':
+        offset = 0
+        if self.start.dst() is not None:
+            offset += self.start.dst().total_seconds()
+        if self.end.dst() is not None:
+            offset += self.end.dst().total_seconds()
+        offset = int(offset) // 60 // 60
+        return Duration(total_seconds=self._total, years=self._years, months=self._months, days=self._days,
+                        hours=self._hours + offset, minutes=self._minutes, seconds=self._seconds)
