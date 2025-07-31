@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "temporals"
-version = "0.1.6"
+version = "1.0.0"
 authors = [
     {name = "Dimitar Ivanov", email = "dimitarxivanov@gmail.com"},
 ]
 description = "Python library providing time, date and datetime periods support"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 keywords = ["time", "date", "datetime", "period", "interval"]
 license = {text = "MIT"}
 classifiers = [
@@ -21,7 +21,6 @@ classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
