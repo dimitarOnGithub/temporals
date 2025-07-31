@@ -1,6 +1,6 @@
 import pytest
 from datetime import time, date, datetime
-from temporals.periods import TimePeriod, DatePeriod, DatetimePeriod
+from temporals.pydatetime import TimePeriod, DatePeriod, DatetimePeriod
 from temporals.exceptions import TimeAmbiguityError
 
 
@@ -91,7 +91,7 @@ class TestDatetimePeriod:
 
     def test_dateperiod_eq(self):
         self.start = datetime(2024, 1, 1, 8, 0)
-        self.end = datetime(2024, 1, 1, 12, 0)
+        self.end = datetime(2024, 1, 2, 12, 0)
         self.period1 = DatePeriod(start=self.start.date(), end=self.end.date())
         self.period2 = DatetimePeriod(start=self.start, end=self.end)
         assert self.period1 == self.period2

@@ -1,6 +1,6 @@
 import pytest
 from datetime import time, date, datetime
-from temporals.periods import DatePeriod, DatetimePeriod, TimePeriod
+from temporals.pydatetime import DatePeriod, DatetimePeriod, TimePeriod
 
 
 class TestDatePeriod:
@@ -8,7 +8,7 @@ class TestDatePeriod:
     def test_constructor_valid(self):
         # Valid objects
         self.start = date(2024, 1, 1)
-        self.end = date(2024, 1, 1)
+        self.end = date(2024, 1, 2)
         self.period = DatePeriod(start=self.start, end=self.end)
         assert isinstance(self.period, DatePeriod)
 
@@ -22,6 +22,12 @@ class TestDatePeriod:
         # Datetime
         self.start = datetime(2024, 1, 1, 8, 0, 0)
         self.end = datetime(2024, 1, 1, 10, 0, 0)
+        with pytest.raises(ValueError):
+            DatePeriod(start=self.start, end=self.end)
+
+        # Equal start and end
+        self.start = date(2024, 1, 1)
+        self.end = date(2024, 1, 1)
         with pytest.raises(ValueError):
             DatePeriod(start=self.start, end=self.end)
 
