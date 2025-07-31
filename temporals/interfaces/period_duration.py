@@ -26,11 +26,6 @@ class AbstractDuration(ABC):
 
     @property
     @abstractmethod
-    def weeks(self) -> int:
-        """ Return the weeks in the Duration; not the total duration to weeks! """
-
-    @property
-    @abstractmethod
     def months(self) -> int:
         """ Return the months in the Duration; not the total duration to months! """
 
