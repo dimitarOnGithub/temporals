@@ -88,8 +88,8 @@ class TestDuration:
     def test_absolute_nonexisting(self):
         # 2 AM in the Paris timezone does not exist since the clock shifts forward to 3 AM
         with pytest.raises(NonexistentTimeError):
-            period = AbsolutePeriod(start=datetime(2025, 3, 30, 2, 0, tzinfo=ZoneInfo(key='Europe/Paris')),
-                                    end=datetime(2025, 3, 30, 3, 0, tzinfo=ZoneInfo(key='Europe/Paris')))
+            AbsolutePeriod(start=datetime(2025, 3, 30, 2, 0, tzinfo=ZoneInfo(key='Europe/Paris')),
+                           end=datetime(2025, 3, 30, 3, 0, tzinfo=ZoneInfo(key='Europe/Paris')))
 
     def test_absolute_timeshift(self):
         # adding an hour

@@ -1,6 +1,6 @@
 from datetime import time, date, datetime
 from itertools import zip_longest
-from typing import Union, Type, Any
+from typing import Union
 from zoneinfo import ZoneInfo
 from temporals.exceptions import NonexistentTimeError
 
