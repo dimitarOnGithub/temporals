@@ -448,7 +448,6 @@ class DatePeriod(interface.PyDatePeriod):
         _total += total_days * 24 * 60 * 60
         # Remove the total amount of years from the days pool
         days_left = (total_days - (_years * 365)) - leap_days
-        print(f"Days left after removing years: {days_left}")
         _months: int = 0
         _year = start.year
         next_month = start.month + _months
@@ -458,16 +457,12 @@ class DatePeriod(interface.PyDatePeriod):
                 next_month = 1
                 _year += 1
             days_in_month = calendar.monthrange(_year, next_month)[1]
-            print(f"Days in month={next_month}: {days_in_month}")
             if days_to_go - days_in_month >= 0:
                 _months += 1
                 next_month += 1
                 days_to_go -= days_in_month
             else:
                 break
-            print(f"Days left: {days_to_go}")
-        print(f"Total months added: {_months}")
-        print(f"Days left: {days_to_go}")
         _days: int = days_to_go
         self._duration = Duration(total_seconds=_total, years=_years, months=_months, days=_days, hours=0, minutes=0,
                                   seconds=0)
@@ -844,6 +839,7 @@ class DatetimePeriod(interface.PyDateTimePeriod):
     def __init__(self,
                  start: datetime,
                  end: datetime,
+                 account_dst: bool = False
                  ):
         if not isinstance(start, datetime):
             raise ValueError(f"Provided value '{start}' for parameter 'start' is not an instance of "
@@ -876,7 +872,14 @@ class DatetimePeriod(interface.PyDateTimePeriod):
             self._minutes = 60 - self._minutes
         self._total += self._minutes * 60
         adjustment_days = 0
-        if self._hours <= 0:
+        if account_dst:
+            offset = 0
+            if self.start.dst() is not None:
+                offset += self.start.dst().total_seconds()
+            if self.end.dst() is not None:
+                offset += self.end.dst().total_seconds()
+            self._hours += int(offset) // 60 // 60
+        if self._hours < 0:
             self._hours = 24 - abs(self._hours)
             adjustment_days = -1
         elif self._hours >= 24:
@@ -893,7 +896,6 @@ class DatetimePeriod(interface.PyDateTimePeriod):
         total_days = (end - start).days + adjustment_days
         # Remove the total amount of years from the days pool
         days_left = (total_days - (self._years * 365)) - leap_days
-        print(f"Days left after removing years: {days_left}")
         self._months: int = 0
         _year = start.year
         next_month = start.month + self._months
@@ -909,9 +911,6 @@ class DatetimePeriod(interface.PyDateTimePeriod):
                 self._total += days_in_month * 86400
             else:
                 break
-            print(f"Days left: {days_left}")
-        print(f"Total months added: {self._months}")
-        print(f"Days left: {days_left}")
         self._days: int = days_left
         if self._days < 0:
             self._days = 0
@@ -1402,21 +1401,10 @@ class DatetimePeriod(interface.PyDateTimePeriod):
 class WallClockPeriod(DatetimePeriod, interface.PyWallClockPeriod):
 
     def __init__(self, start: datetime, end: datetime):
-        super().__init__(start, end)
+        super().__init__(start, end, account_dst=False)
 
 
 class AbsolutePeriod(DatetimePeriod, interface.PyAbsolutePeriod):
 
     def __init__(self, start: datetime, end: datetime):
-        super().__init__(start, end)
-
-    @property
-    def duration(self) -> 'AbstractDuration':
-        offset = 0
-        if self.start.dst() is not None:
-            offset += self.start.dst().total_seconds()
-        if self.end.dst() is not None:
-            offset += self.end.dst().total_seconds()
-        offset = int(offset) // 60 // 60
-        return Duration(total_seconds=self._total, years=self._years, months=self._months, days=self._days,
-                        hours=self._hours + offset, minutes=self._minutes, seconds=self._seconds)
+        super().__init__(start, end, account_dst=True)
