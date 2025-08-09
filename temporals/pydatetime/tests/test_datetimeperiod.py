@@ -1,6 +1,6 @@
 import pytest
 from datetime import time, date, datetime
-from temporals.pydatetime import TimePeriod, DatePeriod, DatetimePeriod
+from temporals.pydatetime.periods import TimePeriod, DatePeriod, DatetimePeriod
 from temporals.exceptions import TimeAmbiguityError
 
 

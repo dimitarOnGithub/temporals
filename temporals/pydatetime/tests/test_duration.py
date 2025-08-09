@@ -77,13 +77,41 @@ class TestDuration:
                                 end=datetime(2025, 10, 26, 4, 0, tzinfo=ZoneInfo(key='Europe/Paris')))
         assert period.duration.hours == 2
 
-    def test_absolute(self):
+    def test_absolute_notz(self):
         period = AbsolutePeriod(start=datetime(2025, 1, 1, 10, 0, 0),
                                  end=datetime(2025, 1, 2, 12, 15, 30))
         assert period.duration.days == 1
         assert period.duration.hours == 2
         assert period.duration.minutes == 15
         assert period.duration.seconds == 30
+
+        period = AbsolutePeriod(start=datetime(2025, 7, 1, 10, 0, 0),
+                                end=datetime(2025, 7, 2, 12, 15, 30))
+        assert period.duration.days == 1
+        assert period.duration.hours == 2
+        assert period.duration.minutes == 15
+        assert period.duration.seconds == 30
+
+    def test_absolute_tz(self):
+        period = AbsolutePeriod(start=datetime(2025, 1, 1, 10, 0, 0, tzinfo=ZoneInfo(key='Europe/Paris')),
+                                end=datetime(2025, 1, 2, 12, 15, 30, tzinfo=ZoneInfo(key='Europe/Paris')))
+        assert period.duration.days == 1
+        assert period.duration.hours == 2
+        assert period.duration.minutes == 15
+        assert period.duration.seconds == 30
+
+        period = AbsolutePeriod(start=datetime(2025, 7, 1, 10, 0, 0, tzinfo=ZoneInfo(key='Europe/Paris')),
+                                end=datetime(2025, 7, 2, 12, 15, 30, tzinfo=ZoneInfo(key='Europe/Paris')))
+        assert period.duration.days == 1
+        assert period.duration.hours == 2
+        assert period.duration.minutes == 15
+        assert period.duration.seconds == 30
+
+        period = AbsolutePeriod(start=datetime(2025, 4, 6, 1, 0, 0, tzinfo=ZoneInfo(key='Australia/Lord_Howe')),
+                                end=datetime(2025, 4, 6, 2, 0, 0, tzinfo=ZoneInfo(key='Australia/Lord_Howe'), fold=1))
+        assert period.duration.days == 0
+        assert period.duration.hours == 1
+        assert period.duration.minutes == 30
 
     def test_absolute_nonexisting(self):
         # 2 AM in the Paris timezone does not exist since the clock shifts forward to 3 AM

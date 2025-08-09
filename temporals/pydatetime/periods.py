@@ -857,6 +857,27 @@ class DatetimePeriod(interface.PyDateTimePeriod):
         self._seconds = end.second - start.second
         self._minutes = end.minute - start.minute
         self._hours = end.hour - start.hour
+        if account_dst:
+            start_dst = 0
+            if self.start.dst() is not None:
+                start_dst = int(self.start.dst().total_seconds())
+            end_dst = 0
+            if self.end.dst() is not None:
+                end_dst = int(self.end.dst().total_seconds())
+            if start_dst != 0 and end_dst != 0:
+                # Both start and end times are in DST, we can stop here
+                pass
+            else:
+                if start_dst != 0:
+                    offset_duration = Duration.from_seconds(start_dst)
+                    self._hours += offset_duration.hours
+                    self._minutes += offset_duration.minutes
+                    self._seconds += offset_duration.seconds
+                elif end_dst != 0:
+                    offset_duration = Duration.from_seconds(end_dst)
+                    self._hours -= offset_duration.hours
+                    self._minutes -= offset_duration.minutes
+                    self._seconds -= offset_duration.seconds
         if self._seconds < 0:
             self._minutes -= 1
             self._seconds = 60 - abs(self._seconds)
@@ -872,27 +893,6 @@ class DatetimePeriod(interface.PyDateTimePeriod):
             self._minutes = 60 - self._minutes
         self._total += self._minutes * 60
         adjustment_days = 0
-        if account_dst:
-            start_dst = 0
-            if self.start.dst() is not None:
-                start_dst = int(self.start.dst().total_seconds())
-                print(f"Start DST: {start_dst}")
-            end_dst = 0
-            if self.end.dst() is not None:
-                end_dst = int(self.end.dst().total_seconds())
-                print(f"End DST: {end_dst}")
-            offset = 0
-            if start_dst != 0 and end_dst != 0:
-                print(f"Both start and end times are in DST, skipping check")
-            if start_dst != 0:
-                print(f"Only start time is in DST, adding an hour")
-                offset = 1
-            elif end_dst != 0:
-                print(f"End time is in DST, removing an hour")
-                offset = -1
-            print(self._hours)
-            self._hours += offset
-            print(self._hours)
         if self._hours < 0:
             self._hours = 24 - abs(self._hours)
             adjustment_days = -1

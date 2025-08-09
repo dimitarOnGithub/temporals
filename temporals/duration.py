@@ -24,6 +24,23 @@ class Duration(AbstractDuration):
         return (f"Duration(total_seconds={self._total}, years={self._years}, months={self._months}, days={self._days}, "
                 f"hours={self._hours}, minutes={self._minutes}, seconds={self._seconds})")
 
+    @classmethod
+    def from_seconds(cls, seconds: int):
+        verify_type('seconds', int, seconds)
+        total: int = seconds
+        minutes: int = seconds // 60
+        hours: int = 0
+        days: int = 0
+        if minutes >= 1:
+            seconds = seconds - (minutes * 60)
+        if minutes // 60 >= 1:
+            hours = minutes // 60
+            minutes = minutes - (hours * 60)
+        if hours // 24 >= 1:
+            days = hours // 24
+            hours = hours - (days * 24)
+        return cls(total_seconds=total, years=0, months=0, days=days, hours=hours, minutes=minutes, seconds=seconds)
+
     @property
     def seconds(self) -> int:
         return self._seconds
