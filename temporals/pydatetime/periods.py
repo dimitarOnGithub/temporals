@@ -873,12 +873,26 @@ class DatetimePeriod(interface.PyDateTimePeriod):
         self._total += self._minutes * 60
         adjustment_days = 0
         if account_dst:
-            offset = 0
+            start_dst = 0
             if self.start.dst() is not None:
-                offset += self.start.dst().total_seconds()
+                start_dst = int(self.start.dst().total_seconds())
+                print(f"Start DST: {start_dst}")
+            end_dst = 0
             if self.end.dst() is not None:
-                offset += self.end.dst().total_seconds()
-            self._hours += int(offset) // 60 // 60
+                end_dst = int(self.end.dst().total_seconds())
+                print(f"End DST: {end_dst}")
+            offset = 0
+            if start_dst != 0 and end_dst != 0:
+                print(f"Both start and end times are in DST, skipping check")
+            if start_dst != 0:
+                print(f"Only start time is in DST, adding an hour")
+                offset = 1
+            elif end_dst != 0:
+                print(f"End time is in DST, removing an hour")
+                offset = -1
+            print(self._hours)
+            self._hours += offset
+            print(self._hours)
         if self._hours < 0:
             self._hours = 24 - abs(self._hours)
             adjustment_days = -1

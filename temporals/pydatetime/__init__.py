@@ -1,6 +1,6 @@
 """ This package provides the interfaces and implementations for the Python's datetime library """
 from .interface import PyTimePeriod, PyDatePeriod, PyDateTimePeriod
-from .periods import TimePeriod, DatePeriod, DatetimePeriod
+from .periods import TimePeriod, DatePeriod, DatetimePeriod, WallClockPeriod, AbsolutePeriod
 
 __all__ = [
     "PyTimePeriod",
@@ -8,5 +8,7 @@ __all__ = [
     "PyDateTimePeriod",
     "TimePeriod",
     "DatePeriod",
-    "DatetimePeriod"
+    "DatetimePeriod",
+    "WallClockPeriod",
+    "AbsolutePeriod"
 ]
