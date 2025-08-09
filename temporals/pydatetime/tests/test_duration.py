@@ -113,6 +113,12 @@ class TestDuration:
         assert period.duration.hours == 1
         assert period.duration.minutes == 30
 
+        period = AbsolutePeriod(start=datetime(2025, 10, 5, 1, 0, 0, tzinfo=ZoneInfo(key='Australia/Lord_Howe')),
+                                end=datetime(2025, 10, 5, 3, 0, 0, tzinfo=ZoneInfo(key='Australia/Lord_Howe')))
+        assert period.duration.days == 0
+        assert period.duration.hours == 1
+        assert period.duration.minutes == 30
+
     def test_absolute_nonexisting(self):
         # 2 AM in the Paris timezone does not exist since the clock shifts forward to 3 AM
         with pytest.raises(NonexistentTimeError):
