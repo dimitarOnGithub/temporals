@@ -77,13 +77,47 @@ class TestDuration:
                                 end=datetime(2025, 10, 26, 4, 0, tzinfo=ZoneInfo(key='Europe/Paris')))
         assert period.duration.hours == 2
 
-    def test_absolute(self):
+    def test_absolute_notz(self):
         period = AbsolutePeriod(start=datetime(2025, 1, 1, 10, 0, 0),
                                  end=datetime(2025, 1, 2, 12, 15, 30))
         assert period.duration.days == 1
         assert period.duration.hours == 2
         assert period.duration.minutes == 15
         assert period.duration.seconds == 30
+
+        period = AbsolutePeriod(start=datetime(2025, 7, 1, 10, 0, 0),
+                                end=datetime(2025, 7, 2, 12, 15, 30))
+        assert period.duration.days == 1
+        assert period.duration.hours == 2
+        assert period.duration.minutes == 15
+        assert period.duration.seconds == 30
+
+    def test_absolute_tz(self):
+        period = AbsolutePeriod(start=datetime(2025, 1, 1, 10, 0, 0, tzinfo=ZoneInfo(key='Europe/Paris')),
+                                end=datetime(2025, 1, 2, 12, 15, 30, tzinfo=ZoneInfo(key='Europe/Paris')))
+        assert period.duration.days == 1
+        assert period.duration.hours == 2
+        assert period.duration.minutes == 15
+        assert period.duration.seconds == 30
+
+        period = AbsolutePeriod(start=datetime(2025, 7, 1, 10, 0, 0, tzinfo=ZoneInfo(key='Europe/Paris')),
+                                end=datetime(2025, 7, 2, 12, 15, 30, tzinfo=ZoneInfo(key='Europe/Paris')))
+        assert period.duration.days == 1
+        assert period.duration.hours == 2
+        assert period.duration.minutes == 15
+        assert period.duration.seconds == 30
+
+        period = AbsolutePeriod(start=datetime(2025, 4, 6, 1, 0, 0, tzinfo=ZoneInfo(key='Australia/Lord_Howe')),
+                                end=datetime(2025, 4, 6, 2, 0, 0, tzinfo=ZoneInfo(key='Australia/Lord_Howe'), fold=1))
+        assert period.duration.days == 0
+        assert period.duration.hours == 1
+        assert period.duration.minutes == 30
+
+        period = AbsolutePeriod(start=datetime(2025, 10, 5, 1, 0, 0, tzinfo=ZoneInfo(key='Australia/Lord_Howe')),
+                                end=datetime(2025, 10, 5, 3, 0, 0, tzinfo=ZoneInfo(key='Australia/Lord_Howe')))
+        assert period.duration.days == 0
+        assert period.duration.hours == 1
+        assert period.duration.minutes == 30
 
     def test_absolute_nonexisting(self):
         # 2 AM in the Paris timezone does not exist since the clock shifts forward to 3 AM
@@ -92,30 +126,30 @@ class TestDuration:
                            end=datetime(2025, 3, 30, 3, 0, tzinfo=ZoneInfo(key='Europe/Paris')))
 
     def test_absolute_timeshift(self):
-        # adding an hour
+        # shift forward by 1 hour
         period = AbsolutePeriod(start=datetime(2025, 3, 30, 1, 0, tzinfo=ZoneInfo(key='Europe/Paris')),
                                 end=datetime(2025, 3, 30, 4, 0, tzinfo=ZoneInfo(key='Europe/Paris')))
-        assert period.duration.hours == 4
+        assert period.duration.hours == 2
 
-        # removing an hour
+        # shift backwards by 1 hour
         period = AbsolutePeriod(start=datetime(2025, 10, 26, 2, 0, tzinfo=ZoneInfo(key='Europe/Paris')),
                                 end=datetime(2025, 10, 26, 4, 0, tzinfo=ZoneInfo(key='Europe/Paris')))
         assert period.duration.hours == 3
 
     def test_absolute_overflow(self):
-        # adding an hour
+        # shift forward by 1 hour
         period = AbsolutePeriod(start=datetime(2025, 3, 30, 1, 0, tzinfo=ZoneInfo(key='Europe/Paris')),
-                                end=datetime(2025, 3, 31, 1, 0, tzinfo=ZoneInfo(key='Europe/Paris')))
+                                end=datetime(2025, 3, 31, 2, 0, tzinfo=ZoneInfo(key='Europe/Paris')))
         assert period.duration.days == 1
-        assert period.duration.hours == 1
+        assert period.duration.hours == 0
 
-        # removing an hour - repeated time
+        # shift backwards by 1 hour - repeated time
         period = AbsolutePeriod(start=datetime(2025, 10, 26, 2, 0, tzinfo=ZoneInfo(key='Europe/Paris')),
                                 end=datetime(2025, 10, 27, 2, 0, tzinfo=ZoneInfo(key='Europe/Paris')))
-        assert period.duration.hours == 1
         assert period.duration.days == 1
+        assert period.duration.hours == 1
 
-        # removing an hour - non-repeated time
+        # shift backwards by 1 hour - non-repeated time
         period = AbsolutePeriod(start=datetime(2025, 10, 26, 2, 0, tzinfo=ZoneInfo(key='Europe/Paris'), fold=1),
                                 end=datetime(2025, 10, 27, 2, 0, tzinfo=ZoneInfo(key='Europe/Paris')))
         assert period.duration.days == 1
