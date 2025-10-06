@@ -1,8 +1,6 @@
 from zoneinfo import ZoneInfo
-
 import pytest
 from datetime import time, date, datetime
-
 from temporals.pydatetime import WallClockPeriod, AbsolutePeriod
 from temporals.pydatetime.periods import TimePeriod, DatetimePeriod, DatePeriod
 
@@ -141,6 +139,34 @@ class TestTimePeriod:
         assert wc_period == WallClockPeriod(
             start=datetime(2024, 1, 10, 8, 0),
             end=datetime(2024, 1, 20, 12, 0)
+        )
+
+    def test_to_absolute_date(self):
+        self.start = time(8, 0)
+        self.end = time(12, 0)
+        self.period = TimePeriod(start=self.start, end=self.end)
+
+        abs_period = self.period.to_absolute(specific_date=date(2024, 1, 1),
+                                             timezone=ZoneInfo("Europe/Paris"))
+        assert abs_period == AbsolutePeriod(
+            start=datetime(2024, 1, 1, 8, 0, tzinfo=ZoneInfo("Europe/Paris")),
+            end=datetime(2024, 1, 1, 12, 0, tzinfo=ZoneInfo("Europe/Paris"))
+        )
+
+    def test_to_absolute_period(self):
+        self.start = time(8, 0)
+        self.end = time(12, 0)
+        self.period = TimePeriod(start=self.start, end=self.end)
+
+        self.other_start = date(2024, 1, 10)
+        self.other_end = date(2024, 1, 20)
+        self.other_period = DatePeriod(start=self.other_start, end=self.other_end)
+
+        abs_period = self.period.to_absolute(specific_date=self.other_period,
+                                             timezone=ZoneInfo("Europe/Paris"))
+        assert abs_period == AbsolutePeriod(
+            start=datetime(2024, 1, 10, 8, 0, tzinfo=ZoneInfo("Europe/Paris")),
+            end=datetime(2024, 1, 20, 12, 0, tzinfo=ZoneInfo("Europe/Paris"))
         )
 
     def test_get_interim(self):
