@@ -8,5 +8,9 @@ class AbstractTimePeriod(AbstractPeriod):
     """
 
     @abstractmethod
-    def combine(self, other):
+    def to_wallclock(self, other):
+        ...
+
+    @abstractmethod
+    def to_absolute(self, other, timezone):
         ...

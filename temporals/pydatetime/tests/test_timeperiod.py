@@ -1,5 +1,9 @@
+from zoneinfo import ZoneInfo
+
 import pytest
 from datetime import time, date, datetime
+
+from temporals.pydatetime import WallClockPeriod, AbsolutePeriod
 from temporals.pydatetime.periods import TimePeriod, DatetimePeriod, DatePeriod
 
 
@@ -113,19 +117,28 @@ class TestTimePeriod:
         self.other_period = TimePeriod(start=self.other_start, end=self.other_end)
         assert self.period.is_after(self.other_period) is True
 
-    def test_combine(self):
+    def test_to_wallclock_date(self):
         self.start = time(8, 0)
         self.end = time(12, 0)
         self.period = TimePeriod(start=self.start, end=self.end)
-        assert self.period.combine(date(2024, 1, 1)) == DatetimePeriod(
+
+        wc_period = self.period.to_wallclock(specific_date=date(2024, 1, 1))
+        assert wc_period == WallClockPeriod(
             start=datetime(2024, 1, 1, 8, 0),
             end=datetime(2024, 1, 1, 12, 0)
         )
 
+    def test_to_wallclock_period(self):
+        self.start = time(8, 0)
+        self.end = time(12, 0)
+        self.period = TimePeriod(start=self.start, end=self.end)
+
         self.other_start = date(2024, 1, 10)
         self.other_end = date(2024, 1, 20)
         self.other_period = DatePeriod(start=self.other_start, end=self.other_end)
-        assert self.period.combine(self.other_period) == DatetimePeriod(
+
+        wc_period = self.period.to_wallclock(specific_date=self.other_period)
+        assert wc_period == WallClockPeriod(
             start=datetime(2024, 1, 10, 8, 0),
             end=datetime(2024, 1, 20, 12, 0)
         )
