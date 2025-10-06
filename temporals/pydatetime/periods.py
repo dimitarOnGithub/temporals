@@ -1,6 +1,7 @@
 from . import interface
 import calendar
 from typing import Union
+from zoneinfo import ZoneInfo
 from datetime import time, date, datetime, timedelta
 from temporals.interfaces import AbstractDuration
 from temporals.duration import Duration
@@ -392,15 +393,19 @@ class TimePeriod(interface.PyTimePeriod):
             return TimePeriod(start=start_time, end=self.end)
         return None
 
-    def combine(self,
-                specific_date: Union['interface.PyDatePeriod', date]
-                ) -> 'interface.PyDateTimePeriod':
+    def to_wallclock(self, specific_date: Union['interface.PyDatePeriod', date]) -> 'interface.PyWallClockPeriod':
         """ This method allows you to combine the TimePeriod with either a datetime.date or a DatePeriod object and
-        create a DatetimePeriod where:
+        create a wall clock period where:
             - the start of the period is set to the start of this period as time and the start of the provided period,
                 or datetime.date, object as date;
-            - the end of the the period is set to the end of this period as time and the end of the provided period,
+            - the end of the period is set to the end of this period as time and the end of the provided period,
                 or datetime.date, object as date;
+
+        Additional parameters:
+            - absolute: a boolean to signify whether the created datetime period should be a wallclock or an absolute
+                one;
+            - timezone: optional ZoneInfo instance which will be used for the creation of the start and end of the
+                corresponding datetime period
         """
         _start = None
         _end = None
@@ -409,10 +414,34 @@ class TimePeriod(interface.PyTimePeriod):
             _end = datetime.combine(specific_date, self.end)
         elif isinstance(specific_date, DatePeriod):
             _start = datetime.combine(specific_date.start, self.start)
-            _end = datetime.combine(specific_date.end, self.end)
+            _end = datetime.combine(specific_date.end, self.end,)
         else:
             raise ValueError(f"Provided object '{specific_date}' is not an instance of datetime.date or DatePeriod")
-        return DatetimePeriod(start=_start, end=_end)
+        return WallClockPeriod(start=_start, end=_end)
+
+    def to_absolute(self, specific_date: Union['interface.PyDatePeriod', date], timezone: ZoneInfo
+                    ) -> 'interface.PyAbsolutePeriod':
+        """ This method allows you to combine the TimePeriod with either a datetime.date or a DatePeriod object and
+        create an absolute period where:
+            - the start of the period is set to the start of this period as time and the start of the provided period,
+                or datetime.date, object as date;
+            - the end of the period is set to the end of this period as time and the end of the provided period,
+                or datetime.date, object as date;
+
+        Since absolute periods require timezone information, you need to pass a ZoneInfo instance via the `timezone`
+        parameter which will be used for the start and end datetime objects created.
+        """
+        _start = None
+        _end = None
+        if isinstance(specific_date, date):
+            _start = datetime.combine(specific_date, self.start, tzinfo=timezone)
+            _end = datetime.combine(specific_date, self.end, tzinfo=timezone)
+        elif isinstance(specific_date, DatePeriod):
+            _start = datetime.combine(specific_date.start, self.start, tzinfo=timezone)
+            _end = datetime.combine(specific_date.end, self.end, tzinfo=timezone)
+        else:
+            raise ValueError(f"Provided object '{specific_date}' is not an instance of datetime.date or DatePeriod")
+        return AbsolutePeriod(start=_start, end=_end)
 
 
 class DatePeriod(interface.PyDatePeriod):

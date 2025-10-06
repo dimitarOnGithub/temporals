@@ -1,4 +1,5 @@
 from typing import Union
+from zoneinfo import ZoneInfo
 from temporals.interfaces import AbstractTimePeriod, AbstractDatePeriod, AbstractDateTimePeriod
 from abc import ABC, abstractmethod
 from datetime import time, date, datetime
@@ -45,9 +46,12 @@ class PyTimePeriod(AbstractTimePeriod, ABC):
         ...
 
     @abstractmethod
-    def combine(self, other: Union['PyDatePeriod', date]) -> 'PyDateTimePeriod':
+    def to_wallclock(self, other: Union['PyDatePeriod', date]) -> 'PyWallClockPeriod':
         ...
 
+    @abstractmethod
+    def to_absolute(self, other: Union['PyDatePeriod', date], timezone: ZoneInfo) -> 'PyAbsolutePeriod':
+        ...
 
 class PyDatePeriod(AbstractDatePeriod, ABC):
 
