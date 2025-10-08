@@ -1,6 +1,5 @@
 from abc import abstractmethod
 from .base_period import AbstractPeriod
-from .datetime_period import AbstractDateTimePeriod
 
 
 class AbstractDatePeriod(AbstractPeriod):
