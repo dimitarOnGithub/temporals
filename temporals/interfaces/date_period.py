@@ -1,6 +1,5 @@
 from abc import abstractmethod
 from .base_period import AbstractPeriod
-from .datetime_period import AbstractDateTimePeriod
 
 
 class AbstractDatePeriod(AbstractPeriod):
@@ -18,8 +17,4 @@ class AbstractDatePeriod(AbstractPeriod):
 
     @abstractmethod
     def to_absolute(self, other, timezone):
-        ...
-
-    @abstractmethod
-    def as_datetime(self) -> 'AbstractDateTimePeriod':
         ...
