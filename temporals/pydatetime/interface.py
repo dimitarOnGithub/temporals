@@ -94,7 +94,11 @@ class PyDatePeriod(AbstractDatePeriod, ABC):
         ...
 
     @abstractmethod
-    def combine(self, other: Union['PyTimePeriod', time]) -> 'PyDateTimePeriod':
+    def to_wallclock(self, other: Union['PyTimePeriod', time]) -> 'PyWallClockPeriod':
+        ...
+
+    @abstractmethod
+    def to_absolute(self, other: Union['PyTimePeriod', time], timezone: ZoneInfo) -> 'PyAbsolutePeriod':
         ...
 
     @abstractmethod

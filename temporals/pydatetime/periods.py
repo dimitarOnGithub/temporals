@@ -835,11 +835,11 @@ class DatePeriod(interface.PyDatePeriod):
             return DatePeriod(start=start_date, end=self.end)
         return None
 
-    def combine(self,
-                specific_time: Union['interface.PyTimePeriod', time]
-                ) -> 'interface.PyDateTimePeriod':
+    def to_wallclock(self,
+                     specific_time: Union['interface.PyTimePeriod', time]
+                     ) -> 'interface.PyWallClockPeriod':
         """ This method allows you to combine the DatePeriod with either a datetime.time or a TimePeriod object and
-        create a DatetimePeriod where:
+        create a wall clock period where:
             - the start of the period is set to the start of this period as date and the start of the provided period,
                 or datetime.time, object as time;
             - the end of the period is set to the end of this period as date and the end of the provided period,
@@ -855,7 +855,32 @@ class DatePeriod(interface.PyDatePeriod):
             _end = datetime.combine(self.end, specific_time.end)
         else:
             raise ValueError(f"Provided object '{specific_time}' is not an instance of datetime.time or TimePeriod")
-        return DatetimePeriod(start=_start, end=_end)
+        return WallClockPeriod(start=_start, end=_end)
+
+    def to_absolute(self,
+                    specific_time: Union['interface.PyTimePeriod', time], timezone: ZoneInfo
+                    ) -> 'interface.PyAbsolutePeriod':
+        """ This method allows you to combine the DatePeriod with either a datetime.time or a TimePeriod object and
+        create an absolute period where:
+            - the start of the period is set to the start of this period as date and the start of the provided period,
+                or datetime.time, object as time;
+            - the end of the period is set to the end of this period as date and the end of the provided period,
+                or datetime.time, object as time;
+
+        Since absolute periods require timezone information, you need to pass a ZoneInfo instance via the `timezone`
+        parameter which will be used for the start and end datetime objects created.
+        """
+        _start = None
+        _end = None
+        if isinstance(specific_time, time):
+            _start = datetime.combine(self.start, specific_time, tzinfo=timezone)
+            _end = datetime.combine(self.end, specific_time, tzinfo=timezone)
+        elif isinstance(specific_time, interface.PyTimePeriod):
+            _start = datetime.combine(self.start, specific_time.start, tzinfo=timezone)
+            _end = datetime.combine(self.end, specific_time.end, tzinfo=timezone)
+        else:
+            raise ValueError(f"Provided object '{specific_time}' is not an instance of datetime.time or TimePeriod")
+        return AbsolutePeriod(start=_start, end=_end)
 
     def as_datetime(self) -> 'interface.PyDateTimePeriod':
         """ Returns this DatePeriod as an instance of DatetimePeriod with the start and end hours set to midnight """
