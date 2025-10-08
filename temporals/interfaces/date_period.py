@@ -19,7 +19,3 @@ class AbstractDatePeriod(AbstractPeriod):
     @abstractmethod
     def to_absolute(self, other, timezone):
         ...
-
-    @abstractmethod
-    def as_datetime(self) -> 'AbstractDateTimePeriod':
-        ...

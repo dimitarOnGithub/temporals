@@ -882,10 +882,6 @@ class DatePeriod(interface.PyDatePeriod):
             raise ValueError(f"Provided object '{specific_time}' is not an instance of datetime.time or TimePeriod")
         return AbsolutePeriod(start=_start, end=_end)
 
-    def as_datetime(self) -> 'interface.PyDateTimePeriod':
-        """ Returns this DatePeriod as an instance of DatetimePeriod with the start and end hours set to midnight """
-        return DatetimePeriod(start=datetime.combine(self.start, time(0, 0, 0)),
-                              end=datetime.combine(self.end, time(23, 59, 59)))
 
 
 class DatetimePeriod(interface.PyDateTimePeriod):

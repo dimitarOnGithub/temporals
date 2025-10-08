@@ -101,10 +101,6 @@ class PyDatePeriod(AbstractDatePeriod, ABC):
     def to_absolute(self, other: Union['PyTimePeriod', time], timezone: ZoneInfo) -> 'PyAbsolutePeriod':
         ...
 
-    @abstractmethod
-    def as_datetime(self) -> 'PyDateTimePeriod':
-        ...
-
 
 class PyDateTimePeriod(AbstractDateTimePeriod, ABC):
 
