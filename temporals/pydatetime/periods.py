@@ -68,9 +68,9 @@ class TimePeriod(interface.PyTimePeriod):
         return f"{self.start.isoformat()}/{self.end.isoformat()}"
 
     def __eq__(self, other):
-        """ Equality can only be determined between instances of this class, as well as the DatetimePeriod class, since
-        only these two classes contain information about the actual time in a day. In both cases, the instances will
-        be tested for exactly equal start and end times.
+        """ Equality can only be determined between instances of this class, as well as the wallclock or absolute
+        periods classes, since only these two classes contain information about the actual time in a day. In both cases,
+        the instances will be tested for exactly equal start and end times.
 
         This method does not account for overlaps between the start and end times of the periods, to get this
         functionality, look at the following methods:
@@ -88,10 +88,10 @@ class TimePeriod(interface.PyTimePeriod):
         return False
 
     def __contains__(self, item):
-        """ Membership test can be done with instances of this class, the DatetimePeriod class, datetime.datetime and
-        datetime.time objects; When membership test is done for a period, it assumes that the request is to check if
-        the tested period exists WITHIN the temporal borders of this period, that is to say, whether the start and
-        end times of the other period are after and before, respectively, of the same of this period.
+        """ Membership test can be done with instances of this class, the wallclock or absolute periods classes,
+        datetime.datetime and datetime.time objects; When membership test is done for a period, it assumes that the
+        request is to check if the tested period exists WITHIN the temporal borders of this period, that is to say,
+        whether the start and end times of the other period are after and before, respectively, of the same of this period.
 
         0800       Your period:          1700
         |==================================|
@@ -513,9 +513,9 @@ class DatePeriod(interface.PyDatePeriod):
         return f"{self.start.isoformat()}/{self.end.isoformat()}"
 
     def __eq__(self, other):
-        """ Equality can only be determined between instances of this class, as well as the DatetimePeriod class, since
-        only these two classes contain information about the actual date. In both cases, the instances will be tested
-        for exactly equal start and end dates.
+        """ Equality can only be determined between instances of this class, as well as the wallclock or absolute
+        periods classes, since only these two classes contain information about the actual date. In both cases,
+        the instances will be tested for exactly equal start and end dates.
 
         This method does not account for overlaps between the start and end dates of the periods, to get this
         functionality, look at the following methods:
@@ -533,10 +533,10 @@ class DatePeriod(interface.PyDatePeriod):
         return False
 
     def __contains__(self, item):
-        """ Membership test can be done with instances of this class, the DatetimePeriod class, datetime.datetime and
-        datetime.date objects; When membership test is done for a period, it assumes that the request is to check if
-        the tested period exists WITHIN the temporal borders of this period, that is to say, whether the start and
-        end date of the other period are after and before, respectively, of the same of this period.
+        """ Membership test can be done with instances of this class, wallclock or absolute periods classes,
+        datetime.datetime and datetime.date objects; When membership test is done for a period, it assumes that the
+        request is to check if the tested period exists WITHIN the temporal borders of this period, that is to say,
+        whether the start and end date of the other period are after and before, respectively, of the same of this period.
 
         2024-01-01 Your period:        2024-03-01
         |==================================|
@@ -1078,7 +1078,7 @@ class WallClockPeriod(interface.PyWallClockPeriod):
         >>> end = datetime(2024, 3, 1, 8, 0)  # 0800, 1st of Mar 2024
         >>> quarter = WallClockPeriod(start=start, end=end)
 
-        and then another DatetimePeriod:
+        and then another WallClockPeriod:
         >>> pto_start = datetime(2024, 2, 1, 8, 0)  # 0800, 1st of Feb 2024
         >>> pto_end = datetime(2024, 2, 15, 8, 0)  # 0800, 15th of Feb 2024
         >>> pto = WallClockPeriod(start=pto_start, end=pto_end)
@@ -1104,7 +1104,7 @@ class WallClockPeriod(interface.PyWallClockPeriod):
             return self.start.date() <= item.start and item.end <= self.end.date()
         if isinstance(item, TimePeriod):
             if self._time_repeats(item):
-                raise TimeAmbiguityError(f"The provided TimePeriod '{item}' exist within this DatetimePeriod "
+                raise TimeAmbiguityError(f"The provided TimePeriod '{item}' exist within this period "
                                          f"('{self}') more than once. For more information on this error, "
                                          f"see https://github.com/dimitarOnGithub/temporals/wiki/Misc")
             if self.duration.days == 1:
@@ -1127,7 +1127,7 @@ class WallClockPeriod(interface.PyWallClockPeriod):
             return self.start.date() <= item <= self.end.date()
         if isinstance(item, time):
             if self._time_repeats(item):
-                raise TimeAmbiguityError(f"The provided unit of time ('{item}') exist within this DatetimePeriod "
+                raise TimeAmbiguityError(f"The provided unit of time ('{item}') exist within this period "
                                          f"('{self}')  more than once. For more information on this error, "
                                          f"see https://github.com/dimitarOnGithub/temporals/wiki/Misc")
             if self.duration.days == 1:
@@ -1140,8 +1140,8 @@ class WallClockPeriod(interface.PyWallClockPeriod):
                   ) -> bool:
         """ Test if this period ends before the provided `other` value. In the cases when a date or a DatePeriod is
         provided, the check will be done based on at least a 24 hour difference (ie, this period ends on the 2024-01-01
-        and the provided date/DatePeriod begins on the 2024-01-02). In all other cases (datetime and DatetimePeriod),
-        objects are allowed to share the same end-start datetime.
+        and the provided date/DatePeriod begins on the 2024-01-02). In all other cases (datetime and wallclock or
+        absolute periods), objects are allowed to share the same end-start datetime.
         """
         if isinstance(other, DatePeriod):
             return self.end.date() < other.start
@@ -1157,7 +1157,7 @@ class WallClockPeriod(interface.PyWallClockPeriod):
         """ Test if this period begins after the provided `other` value. In the cases when a date or a DatePeriod is
         provided, the check will be done based on at least a 24 hour difference (ie, this period begins on the
         2024-01-02 and the provided date/DatePeriod ends on the 2024-01-01). In all other cases (datetime and
-        DatetimePeriod), objects are allowed to share the same end-start datetime.
+        wallclock or absolute periods), objects are allowed to share the same end-start datetime.
         """
         if isinstance(other, DatePeriod):
             return other.end < self.start.date()
@@ -1170,8 +1170,8 @@ class WallClockPeriod(interface.PyWallClockPeriod):
     def get_interim(self,
                     other: Union['WallClockPeriod', datetime]
                     ) -> Union['WallClockPeriod', None]:
-        """ Method returns the DatetimePeriod between the start/end of the provided period, if `other` is a
-        DatetimePeriod, or the DatetimePeriod between the point in time and the start/end of this period, depending on
+        """ Method returns the WallClockPeriod between the start/end of the provided period, if `other` is a
+        WallClockPeriod, or the WallClockPeriod between the point in time and the start/end of this period, depending on
         whether the same is occurring before the start of this period or after the end of it.
 
         This method is intended to be used when the provided `other` does not exist within and does not overlap (or is
@@ -1228,7 +1228,7 @@ class WallClockPeriod(interface.PyWallClockPeriod):
         """
         if isinstance(other, TimePeriod):
             if self._time_repeats(other):
-                raise TimeAmbiguityError(f"The provided TimePeriod '{other}' exist within this DatetimePeriod "
+                raise TimeAmbiguityError(f"The provided TimePeriod '{other}' exist within this period "
                                          f"('{self}') more than once. For more information on this error, "
                                          f"see https://github.com/dimitarOnGithub/temporals/wiki/Misc")
             if self.start.date() < self.end.date():
@@ -1236,7 +1236,7 @@ class WallClockPeriod(interface.PyWallClockPeriod):
                 # end of it
                 if other.start < self.start.time() and other.start < self.end.time():
                     raise TimeAmbiguityError(f"The provided TimePeriod ('{other}') is ambiguous compared to this "
-                                             f"DatetimePeriod ('{self}'); it's overlapped by (starts before) this "
+                                             f"WallClockPeriod ('{self}'); it's overlapped by (starts before) this "
                                              f"period on {self.start.date().isoformat()} but this period continues "
                                              f"until after it's start on {self.end.date().isoformat()}")
                 else:
@@ -1284,7 +1284,7 @@ class WallClockPeriod(interface.PyWallClockPeriod):
         """
         if isinstance(other, TimePeriod):
             if self._time_repeats(other):
-                raise TimeAmbiguityError(f"The provided TimePeriod '{other}' exist within this DatetimePeriod "
+                raise TimeAmbiguityError(f"The provided TimePeriod '{other}' exist within this WallClockPeriod "
                                          f"('{self}') more than once. For more information on this error, "
                                          f"see https://github.com/dimitarOnGithub/temporals/wiki/Misc")
             if self.start.date() < self.end.date():
@@ -1292,7 +1292,7 @@ class WallClockPeriod(interface.PyWallClockPeriod):
                 # end of it
                 if self.start.time() < other.start and self.end.time() < other.end:
                     raise TimeAmbiguityError(f"The provided TimePeriod ('{other}') is ambiguous compared to this "
-                                             f"DatetimePeriod ('{self}'); it overlaps with (starts after) this "
+                                             f"WallClockPeriod ('{self}'); it overlaps with (starts after) this "
                                              f"period on {self.start.date().isoformat()} but this period continues "
                                              f"until after it's start on {self.end.date().isoformat()}")
                 else:
@@ -1322,7 +1322,7 @@ class WallClockPeriod(interface.PyWallClockPeriod):
         >>> period2_end = time(13, 0, 0)
         >>> period2 = TimePeriod(start=period2_start, end=period2_end)
         >>> period1
-        DatetimePeriod(start=datetime.datetime(2024, 1, 1, 8, 0), end=datetime.datetime(2024, 1, 1, 12, 0))
+        WallClockPeriod(start=datetime.datetime(2024, 1, 1, 8, 0), end=datetime.datetime(2024, 1, 1, 12, 0))
         >>> period2
         TimePeriod(start=datetime.time(10, 0), end=datetime.time(13, 0))
 
@@ -1655,7 +1655,7 @@ class AbsolutePeriod(interface.PyAbsolutePeriod):
         >>> end = datetime(2024, 3, 1, 8, 0)  # 0800, 1st of Mar 2024
         >>> quarter = AbsolutePeriod(start=start, end=end)
 
-        and then another DatetimePeriod:
+        and then another AbsolutePeriod:
         >>> pto_start = datetime(2024, 2, 1, 8, 0)  # 0800, 1st of Feb 2024
         >>> pto_end = datetime(2024, 2, 15, 8, 0)  # 0800, 15th of Feb 2024
         >>> pto = AbsolutePeriod(start=pto_start, end=pto_end)
@@ -1681,7 +1681,7 @@ class AbsolutePeriod(interface.PyAbsolutePeriod):
             return self.start.date() <= item.start and item.end <= self.end.date()
         if isinstance(item, TimePeriod):
             if self._time_repeats(item):
-                raise TimeAmbiguityError(f"The provided TimePeriod '{item}' exist within this DatetimePeriod "
+                raise TimeAmbiguityError(f"The provided TimePeriod '{item}' exist within this AbsolutePeriod "
                                          f"('{self}') more than once. For more information on this error, "
                                          f"see https://github.com/dimitarOnGithub/temporals/wiki/Misc")
             if self.duration.days == 1:
@@ -1704,7 +1704,7 @@ class AbsolutePeriod(interface.PyAbsolutePeriod):
             return self.start.date() <= item <= self.end.date()
         if isinstance(item, time):
             if self._time_repeats(item):
-                raise TimeAmbiguityError(f"The provided unit of time ('{item}') exist within this DatetimePeriod "
+                raise TimeAmbiguityError(f"The provided unit of time ('{item}') exist within this AbsolutePeriod "
                                          f"('{self}')  more than once. For more information on this error, "
                                          f"see https://github.com/dimitarOnGithub/temporals/wiki/Misc")
             if self.duration.days == 1:
@@ -1717,7 +1717,7 @@ class AbsolutePeriod(interface.PyAbsolutePeriod):
                   ) -> bool:
         """ Test if this period ends before the provided `other` value. In the cases when a date or a DatePeriod is
         provided, the check will be done based on at least a 24 hour difference (ie, this period ends on the 2024-01-01
-        and the provided date/DatePeriod begins on the 2024-01-02). In all other cases (datetime and DatetimePeriod),
+        and the provided date/DatePeriod begins on the 2024-01-02). In all other cases (datetime and AbsolutePeriod),
         objects are allowed to share the same end-start datetime.
         """
         if isinstance(other, DatePeriod):
@@ -1734,7 +1734,7 @@ class AbsolutePeriod(interface.PyAbsolutePeriod):
         """ Test if this period begins after the provided `other` value. In the cases when a date or a DatePeriod is
         provided, the check will be done based on at least a 24 hour difference (ie, this period begins on the
         2024-01-02 and the provided date/DatePeriod ends on the 2024-01-01). In all other cases (datetime and
-        DatetimePeriod), objects are allowed to share the same end-start datetime.
+        AbsolutePeriod), objects are allowed to share the same end-start datetime.
         """
         if isinstance(other, DatePeriod):
             return other.end < self.start.date()
@@ -1747,8 +1747,8 @@ class AbsolutePeriod(interface.PyAbsolutePeriod):
     def get_interim(self,
                     other: Union['AbsolutePeriod', datetime]
                     ) -> Union['AbsolutePeriod', None]:
-        """ Method returns the DatetimePeriod between the start/end of the provided period, if `other` is a
-        DatetimePeriod, or the DatetimePeriod between the point in time and the start/end of this period, depending on
+        """ Method returns the AbsolutePeriod between the start/end of the provided period, if `other` is a
+        AbsolutePeriod, or the AbsolutePeriod between the point in time and the start/end of this period, depending on
         whether the same is occurring before the start of this period or after the end of it.
 
         This method is intended to be used when the provided `other` does not exist within and does not overlap (or is
@@ -1805,7 +1805,7 @@ class AbsolutePeriod(interface.PyAbsolutePeriod):
         """
         if isinstance(other, TimePeriod):
             if self._time_repeats(other):
-                raise TimeAmbiguityError(f"The provided TimePeriod '{other}' exist within this DatetimePeriod "
+                raise TimeAmbiguityError(f"The provided TimePeriod '{other}' exist within this AbsolutePeriod "
                                          f"('{self}') more than once. For more information on this error, "
                                          f"see https://github.com/dimitarOnGithub/temporals/wiki/Misc")
             if self.start.date() < self.end.date():
@@ -1813,7 +1813,7 @@ class AbsolutePeriod(interface.PyAbsolutePeriod):
                 # end of it
                 if other.start < self.start.time() and other.start < self.end.time():
                     raise TimeAmbiguityError(f"The provided TimePeriod ('{other}') is ambiguous compared to this "
-                                             f"DatetimePeriod ('{self}'); it's overlapped by (starts before) this "
+                                             f"AbsolutePeriod ('{self}'); it's overlapped by (starts before) this "
                                              f"period on {self.start.date().isoformat()} but this period continues "
                                              f"until after it's start on {self.end.date().isoformat()}")
                 else:
@@ -1861,7 +1861,7 @@ class AbsolutePeriod(interface.PyAbsolutePeriod):
         """
         if isinstance(other, TimePeriod):
             if self._time_repeats(other):
-                raise TimeAmbiguityError(f"The provided TimePeriod '{other}' exist within this DatetimePeriod "
+                raise TimeAmbiguityError(f"The provided TimePeriod '{other}' exist within this AbsolutePeriod "
                                          f"('{self}') more than once. For more information on this error, "
                                          f"see https://github.com/dimitarOnGithub/temporals/wiki/Misc")
             if self.start.date() < self.end.date():
@@ -1869,7 +1869,7 @@ class AbsolutePeriod(interface.PyAbsolutePeriod):
                 # end of it
                 if self.start.time() < other.start and self.end.time() < other.end:
                     raise TimeAmbiguityError(f"The provided TimePeriod ('{other}') is ambiguous compared to this "
-                                             f"DatetimePeriod ('{self}'); it overlaps with (starts after) this "
+                                             f"AbsolutePeriod ('{self}'); it overlaps with (starts after) this "
                                              f"period on {self.start.date().isoformat()} but this period continues "
                                              f"until after it's start on {self.end.date().isoformat()}")
                 else:
@@ -1983,11 +1983,11 @@ class AbsolutePeriod(interface.PyAbsolutePeriod):
         Therefore, if you want to obtain the amount of time when the periods do NOT overlap as relative to Period 1,
         you should use:
         >>> period1.get_disconnect(period2)
-        DatetimePeriod(start=datetime.datetime(2024, 1, 1, 8, 0), end=datetime.datetime(2024, 1, 1, 10, 0))
+        AbsolutePeriod(start=datetime.datetime(2024, 1, 1, 8, 0), end=datetime.datetime(2024, 1, 1, 10, 0))
 
         But if you want to obtain the same as relative to Period 2 instead:
         >>> period2.get_disconnect(period1)
-        DatetimePeriod(start=datetime.datetime(2024, 1, 1, 12, 0), end=datetime.datetime(2024, 1, 1, 13, 0))
+        AbsolutePeriod(start=datetime.datetime(2024, 1, 1, 12, 0), end=datetime.datetime(2024, 1, 1, 13, 0))
         """
         if (not isinstance(other, TimePeriod)
                 and not isinstance(other, DatePeriod)

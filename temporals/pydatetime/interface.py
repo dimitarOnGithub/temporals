@@ -1,6 +1,6 @@
 from typing import Union
 from zoneinfo import ZoneInfo
-from temporals.interfaces import AbstractTimePeriod, AbstractDatePeriod, AbstractDateTimePeriod
+from temporals.interfaces import AbstractTimePeriod, AbstractDatePeriod, AbstractAbsolutePeriod, AbstractWallClockPeriod
 from abc import ABC, abstractmethod
 from datetime import time, date, datetime
 
@@ -106,7 +106,7 @@ class PyDatePeriod(AbstractDatePeriod, ABC):
         ...
 
 
-class PyWallClockPeriod(AbstractDateTimePeriod, ABC):
+class PyWallClockPeriod(AbstractWallClockPeriod, ABC):
 
     @property
     @abstractmethod
@@ -151,7 +151,7 @@ class PyWallClockPeriod(AbstractDateTimePeriod, ABC):
         ...
 
 
-class PyAbsolutePeriod(AbstractDateTimePeriod, ABC):
+class PyAbsolutePeriod(AbstractAbsolutePeriod, ABC):
 
     @property
     @abstractmethod

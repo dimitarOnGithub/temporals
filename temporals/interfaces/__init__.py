@@ -20,7 +20,7 @@ For example, an interface specifically focused on the Python's datetime library 
 from .base_period import AbstractPeriod
 from .time_period import AbstractTimePeriod
 from .date_period import AbstractDatePeriod
-from .datetime_period import AbstractDateTimePeriod
+from .datetime_period import AbstractWallClockPeriod, AbstractAbsolutePeriod
 from .period_duration import AbstractDuration
 
 
@@ -28,6 +28,7 @@ __all__ = [
     "AbstractPeriod",
     "AbstractTimePeriod",
     "AbstractDatePeriod",
-    "AbstractDateTimePeriod",
+    "AbstractWallClockPeriod",
+    "AbstractAbsolutePeriod",
     "AbstractDuration"
 ]
