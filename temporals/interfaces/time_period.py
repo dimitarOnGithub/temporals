@@ -1,5 +1,6 @@
 from abc import abstractmethod
 from .base_period import AbstractPeriod
+from .datetime_period import AbstractAbsolutePeriod, AbstractWallClockPeriod
 
 
 class AbstractTimePeriod(AbstractPeriod):
@@ -9,9 +10,11 @@ class AbstractTimePeriod(AbstractPeriod):
     """
 
     @abstractmethod
-    def to_wallclock(self, other):
+    def to_wallclock(self, other) -> AbstractWallClockPeriod:
+        """ Implementing classes must provide the ability to create an instance of the AbstractWallClockPeriod interface """
         ...
 
     @abstractmethod
-    def to_absolute(self, other, timezone):
+    def to_absolute(self, other, timezone) -> AbstractAbsolutePeriod:
+        """ Implementing classes must provide the ability to create an instance of the AbstractAbsolutePeriod interface """
         ...
