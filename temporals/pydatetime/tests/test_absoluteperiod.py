@@ -1,36 +1,36 @@
 import pytest
 from datetime import time, date, datetime
-from temporals.pydatetime.periods import TimePeriod, DatePeriod, DatetimePeriod
+from temporals.pydatetime.periods import TimePeriod, DatePeriod, AbsolutePeriod
 from temporals.exceptions import TimeAmbiguityError
 
 
-class TestDatetimePeriod:
+class TestAbsolutePeriod:
 
     def test_constructor_valid(self):
         # Valid objects
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 1, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
-        assert isinstance(self.period, DatetimePeriod)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
+        assert isinstance(self.period, AbsolutePeriod)
 
     def test_constructor_invalid(self):
         # Time
         self.start = time(13, 1, 1)
         self.end = time(14, 1, 2)
         with pytest.raises(ValueError):
-            DatetimePeriod(start=self.start, end=self.end)
+            AbsolutePeriod(start=self.start, end=self.end)
 
         # Date
         self.start = date(2024, 1, 1)
         self.end = date(2024, 1, 1)
         with pytest.raises(ValueError):
-            DatetimePeriod(start=self.start, end=self.end)
+            AbsolutePeriod(start=self.start, end=self.end)
 
     def test_nonrepeating_time(self):
         """ This tests the internal _time_repeats method """
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 2, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
         self.time = time(7, 0)
         assert self.period._time_repeats(self.time) is False
@@ -45,7 +45,7 @@ class TestDatetimePeriod:
         # 48h period
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 3, 11, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
         # TimePeriod that starts before it and ends after it
         self.period1 = TimePeriod(start=time(7, 0), end=time(12, 0))
@@ -55,7 +55,7 @@ class TestDatetimePeriod:
         """ This tests the internal _time_repeat method """
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 2, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
         self.time = time(10, 0)
         assert self.period._time_repeats(self.time) is True
@@ -65,7 +65,7 @@ class TestDatetimePeriod:
         # More than 24h period
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 3, 11, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
         self.time = time(7, 0)
         assert self.period._time_repeats(self.time) is True
@@ -86,14 +86,14 @@ class TestDatetimePeriod:
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 1, 12, 0)
         self.period1 = TimePeriod(start=self.start.time(), end=self.end.time())
-        self.period2 = DatetimePeriod(start=self.start, end=self.end)
+        self.period2 = AbsolutePeriod(start=self.start, end=self.end)
         assert self.period1 == self.period2
 
     def test_dateperiod_eq(self):
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 2, 12, 0)
         self.period1 = DatePeriod(start=self.start.date(), end=self.end.date())
-        self.period2 = DatetimePeriod(start=self.start, end=self.end)
+        self.period2 = AbsolutePeriod(start=self.start, end=self.end)
         assert self.period1 == self.period2
 
         self.different_end = date(2024, 1, 10)
@@ -103,24 +103,24 @@ class TestDatetimePeriod:
     def test_datetimeperiod_eq(self):
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 1, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
         self.start_dt = datetime(2024, 1, 1, 8, 0)
         self.end_dt = datetime(2024, 1, 1, 12, 0)
-        self.period_dt = DatetimePeriod(start=self.start_dt, end=self.end_dt)
+        self.period_dt = AbsolutePeriod(start=self.start_dt, end=self.end_dt)
         assert self.period == self.period_dt
 
     def test_invalid_eq(self):
         self.random_dt = datetime(2024, 1, 1, 8, 0)
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 1, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
         assert self.random_dt != self.period
 
     def test_valid_membership(self):
         # Same day period
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 1, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
         # Time test
         self.time = time(10, 0)
@@ -141,8 +141,8 @@ class TestDatetimePeriod:
         )
         assert self.time_period in self.period
 
-        # DatetimePeriod test
-        self.dt_period = DatetimePeriod(
+        # AbsolutePeriod test
+        self.dt_period = AbsolutePeriod(
             start=datetime(2024, 1, 1, 9, 0),
             end=datetime(2024, 1, 1, 11, 0)
         )
@@ -151,7 +151,7 @@ class TestDatetimePeriod:
         # 24h period
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 2, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
         # Time test
         self.time = time(7, 0)
@@ -180,7 +180,7 @@ class TestDatetimePeriod:
         # Same day period
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 1, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
         # Time test
         self.time = time(17, 0)
@@ -205,7 +205,7 @@ class TestDatetimePeriod:
     def test_is_before(self):
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 1, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
         assert self.period.is_before(date(2024, 1, 2)) is True
         assert self.period.is_before(date(2024, 1, 1)) is False
         assert self.period.is_before(datetime(2024, 1, 1, 12, 0)) is True
@@ -218,7 +218,7 @@ class TestDatetimePeriod:
 
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 5, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
         self.other_start = date(2024, 1, 5)
         self.other_end = date(2024, 1, 10)
         self.other_period = DatePeriod(start=self.other_start, end=self.other_end)
@@ -226,13 +226,13 @@ class TestDatetimePeriod:
 
         self.other_start = datetime(2024, 1, 5, 12, 0)
         self.other_end = datetime(2024, 3, 1, 12, 0)
-        self.other_period = DatetimePeriod(start=self.other_start, end=self.other_end)
+        self.other_period = AbsolutePeriod(start=self.other_start, end=self.other_end)
         assert self.period.is_before(self.other_period) is True
 
     def test_is_after(self):
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 1, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
         assert self.period.is_after(date(2023, 12, 31)) is True
         assert self.period.is_after(date(2024, 1, 1)) is False
         assert self.period.is_after(datetime(2024, 1, 1, 8, 0)) is True
@@ -250,7 +250,7 @@ class TestDatetimePeriod:
 
         self.other_start = datetime(2024, 1, 1, 7, 0)
         self.other_end = datetime(2024, 1, 1, 8, 0)
-        self.other_period = DatetimePeriod(start=self.other_start, end=self.other_end)
+        self.other_period = AbsolutePeriod(start=self.other_start, end=self.other_end)
         assert self.period.is_after(self.other_period) is True
 
     def test_overlaps_time(self):
@@ -269,7 +269,7 @@ class TestDatetimePeriod:
         """
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 1, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
         self.other_start = time(10, 0)
         self.other_end = time(14, 0)
@@ -294,7 +294,7 @@ class TestDatetimePeriod:
         """
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 3, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
         self.other_start = date(2024, 1, 2)
         self.other_end = date(2024, 1, 4)
@@ -321,11 +321,11 @@ class TestDatetimePeriod:
         """
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 1, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
         self.other_start = datetime(2024, 1, 1, 11, 0)
         self.other_end = datetime(2024, 1, 1, 17, 0)
-        self.other_period = DatetimePeriod(start=self.other_start, end=self.other_end)
+        self.other_period = AbsolutePeriod(start=self.other_start, end=self.other_end)
         assert self.period.overlapped_by(self.other_period) is True
         assert self.other_period.overlaps_with(self.period) is True
         assert self.period.overlaps_with(self.other_period) is False
@@ -346,11 +346,11 @@ class TestDatetimePeriod:
         """
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 2, 1, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
         self.other_start = datetime(2024, 1, 15, 11, 0)
         self.other_end = datetime(2024, 3, 1, 12, 0)
-        self.other_period = DatetimePeriod(start=self.other_start, end=self.other_end)
+        self.other_period = AbsolutePeriod(start=self.other_start, end=self.other_end)
         assert self.period.overlapped_by(self.other_period) is True
         assert self.other_period.overlaps_with(self.period) is True
         assert self.period.overlaps_with(self.other_period) is False
@@ -368,7 +368,7 @@ class TestDatetimePeriod:
         """
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 2, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
         self.time = time(9, 0)
         with pytest.raises(TimeAmbiguityError):
@@ -382,7 +382,7 @@ class TestDatetimePeriod:
         """
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 2, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
         self.other_start = time(10, 0)
         self.other_end = time(12, 0)
@@ -400,7 +400,7 @@ class TestDatetimePeriod:
         """
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 3, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
         self.other_start = time(10, 0)
         self.other_end = time(14, 0)
@@ -424,7 +424,7 @@ class TestDatetimePeriod:
         """
         self.start = datetime(2024, 1, 1, 10, 0)
         self.end = datetime(2024, 1, 2, 8, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
         self.other_start = time(7, 0)
         self.other_end = time(12, 0)
@@ -442,7 +442,7 @@ class TestDatetimePeriod:
         """
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 2, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
         self.other_start = time(10, 0)
         self.other_end = time(14, 0)
@@ -459,7 +459,7 @@ class TestDatetimePeriod:
         """
         self.start = datetime(2024, 1, 1, 6, 0)
         self.end = datetime(2024, 1, 2, 10, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
         self.other_start = time(10, 0)
         self.other_end = time(14, 0)
@@ -471,27 +471,27 @@ class TestDatetimePeriod:
     def test_get_interim(self):
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 1, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
-        assert self.period.get_interim(datetime(2023, 12, 15, 13, 0)) == DatetimePeriod(
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
+        assert self.period.get_interim(datetime(2023, 12, 15, 13, 0)) == AbsolutePeriod(
             datetime(2023, 12, 15, 13, 0), datetime(2024, 1, 1, 8, 0)
         )
-        assert self.period.get_interim(datetime(2024, 2, 20, 8, 0)) == DatetimePeriod(
+        assert self.period.get_interim(datetime(2024, 2, 20, 8, 0)) == AbsolutePeriod(
             datetime(2024, 1, 1, 12, 0), datetime(2024, 2, 20, 8, 0)
         )
 
-        self.other_period = DatetimePeriod(
+        self.other_period = AbsolutePeriod(
             start=datetime(2023, 12, 15, 10, 0),
             end=datetime(2023, 12, 30, 8, 0)
         )
-        assert self.period.get_interim(self.other_period) == DatetimePeriod(datetime(2023, 12, 30, 8, 0),
+        assert self.period.get_interim(self.other_period) == AbsolutePeriod(datetime(2023, 12, 30, 8, 0),
                                                                             datetime(2024, 1, 1, 8, 0)
                                                                             )
 
-        self.other_period = DatetimePeriod(
+        self.other_period = AbsolutePeriod(
             start=datetime(2024, 1, 1, 12, 0, 5),
             end=datetime(2024, 1, 1, 16, 0)
         )
-        assert self.period.get_interim(self.other_period) == DatetimePeriod(datetime(2024, 1, 1, 12, 0, 0),
+        assert self.period.get_interim(self.other_period) == AbsolutePeriod(datetime(2024, 1, 1, 12, 0, 0),
                                                                             datetime(2024, 1, 1, 12, 0, 5)
                                                                             )
 
@@ -499,7 +499,7 @@ class TestDatetimePeriod:
         # Same day period
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 1, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
         # Time period test
         self.time_period = TimePeriod(
@@ -515,7 +515,7 @@ class TestDatetimePeriod:
         # 2 day period
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 3, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
         # Date period test
         self.date_period = DatePeriod(
@@ -529,14 +529,14 @@ class TestDatetimePeriod:
         # Datetime period test
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 3, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
-        self.dt_period = DatetimePeriod(
+        self.dt_period = AbsolutePeriod(
             start=datetime(2024, 1, 2, 10, 0),
             end=datetime(2024, 1, 4, 8, 0)
         )
         self.overlap = self.period.get_overlap(self.date_period)
-        assert self.overlap == DatetimePeriod(
+        assert self.overlap == AbsolutePeriod(
             start=datetime(2024, 1, 2, 10, 0),
             end=datetime(2024, 1, 3, 12, 0)
         )
@@ -545,7 +545,7 @@ class TestDatetimePeriod:
         # Same day period
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 1, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
         # Time period test
         self.time_period = TimePeriod(
@@ -560,7 +560,7 @@ class TestDatetimePeriod:
         # 2 day period
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 3, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
         # Date period test
         self.date_period = DatePeriod(
@@ -577,19 +577,19 @@ class TestDatetimePeriod:
         # Datetime period test
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 3, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
-        self.dt_period = DatetimePeriod(
+        self.dt_period = AbsolutePeriod(
             start=datetime(2024, 1, 2, 10, 0),
             end=datetime(2024, 1, 4, 8, 0)
         )
         self.dc = self.period.get_disconnect(self.date_period)
-        assert self.dc == DatetimePeriod(
+        assert self.dc == AbsolutePeriod(
             start=datetime(2024, 1, 1, 8, 0),
             end=datetime(2024, 1, 2, 10, 0)
         )
         self.other_dc = self.dt_period.get_disconnect(self.period)
-        assert self.other_dc == DatetimePeriod(
+        assert self.other_dc == AbsolutePeriod(
             start=datetime(2024, 1, 3, 12, 0),
             end=datetime(2024, 1, 4, 8, 0)
         )
@@ -598,7 +598,7 @@ class TestDatetimePeriod:
         # Same day period
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 1, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
         # Time period test
         self.time_period = TimePeriod(
@@ -613,7 +613,7 @@ class TestDatetimePeriod:
         # Date period test
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 5, 12, 0)
-        self.period = DatetimePeriod(start=self.start, end=self.end)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
         self.date_period = DatePeriod(
             start=date(2024, 1, 10),
@@ -625,7 +625,7 @@ class TestDatetimePeriod:
         assert self.other_dc is None
 
         # Datetime period test
-        self.dt_period = DatetimePeriod(
+        self.dt_period = AbsolutePeriod(
             start=datetime(2023, 12, 10, 10, 0),
             end=datetime(2023, 12, 15, 8, 0)
         )
