@@ -30,19 +30,21 @@ class PyTimePeriod(AbstractTimePeriod, ABC):
         ...
 
     @abstractmethod
-    def overlaps_with(self, other: Union['PyTimePeriod', 'PyDateTimePeriod']) -> bool:
+    def overlaps_with(self, other: Union['PyTimePeriod', 'PyWallClockPeriod', 'PyAbsolutePeriod']) -> bool:
         ...
 
     @abstractmethod
-    def overlapped_by(self, other: Union['PyTimePeriod', 'PyDateTimePeriod']) -> bool:
+    def overlapped_by(self, other: Union['PyTimePeriod', 'PyWallClockPeriod', 'PyAbsolutePeriod']) -> bool:
         ...
 
     @abstractmethod
-    def get_overlap(self, other: Union['PyTimePeriod', 'PyDateTimePeriod']) -> Union['PyTimePeriod', None]:
+    def get_overlap(self, other: Union['PyTimePeriod', 'PyWallClockPeriod', 'PyAbsolutePeriod']
+                    ) -> Union['PyTimePeriod', None]:
         ...
 
     @abstractmethod
-    def get_disconnect(self, other: Union['PyTimePeriod', 'PyDateTimePeriod']) -> Union['PyTimePeriod', None]:
+    def get_disconnect(self, other: Union['PyTimePeriod', 'PyWallClockPeriod', 'PyAbsolutePeriod']
+                       ) -> Union['PyTimePeriod', None]:
         ...
 
     @abstractmethod
@@ -66,11 +68,11 @@ class PyDatePeriod(AbstractDatePeriod, ABC):
         ...
 
     @abstractmethod
-    def is_before(self, other: Union['PyDatePeriod', 'PyDateTimePeriod', datetime, date]) -> bool:
+    def is_before(self, other: Union['PyDatePeriod', 'PyWallClockPeriod', 'PyAbsolutePeriod', datetime, date]) -> bool:
         ...
 
     @abstractmethod
-    def is_after(self, other: Union['PyDatePeriod', 'PyDateTimePeriod', datetime, date]) -> bool:
+    def is_after(self, other: Union['PyDatePeriod', 'PyWallClockPeriod', 'PyAbsolutePeriod', datetime, date]) -> bool:
         ...
 
     @abstractmethod
@@ -78,19 +80,21 @@ class PyDatePeriod(AbstractDatePeriod, ABC):
         ...
 
     @abstractmethod
-    def overlaps_with(self, other: Union['PyDatePeriod', 'PyDateTimePeriod']) -> bool:
+    def overlaps_with(self, other: Union['PyDatePeriod', 'PyWallClockPeriod', 'PyAbsolutePeriod']) -> bool:
         ...
 
     @abstractmethod
-    def overlapped_by(self, other: Union['PyDatePeriod', 'PyDateTimePeriod']) -> bool:
+    def overlapped_by(self, other: Union['PyDatePeriod', 'PyWallClockPeriod', 'PyAbsolutePeriod']) -> bool:
         ...
 
     @abstractmethod
-    def get_overlap(self, other: Union['PyDatePeriod', 'PyDateTimePeriod']) -> Union['PyDatePeriod', None]:
+    def get_overlap(self, other: Union['PyDatePeriod', 'PyWallClockPeriod', 'PyAbsolutePeriod']
+                    ) -> Union['PyDatePeriod', None]:
         ...
 
     @abstractmethod
-    def get_disconnect(self, other: Union['PyDatePeriod', 'PyDateTimePeriod']) -> Union['PyDatePeriod', None]:
+    def get_disconnect(self, other: Union['PyDatePeriod', 'PyWallClockPeriod', 'PyAbsolutePeriod']
+                       ) -> Union['PyDatePeriod', None]:
         ...
 
     @abstractmethod
@@ -102,7 +106,7 @@ class PyDatePeriod(AbstractDatePeriod, ABC):
         ...
 
 
-class PyDateTimePeriod(AbstractDateTimePeriod, ABC):
+class PyWallClockPeriod(AbstractDateTimePeriod, ABC):
 
     @property
     @abstractmethod
@@ -115,41 +119,78 @@ class PyDateTimePeriod(AbstractDateTimePeriod, ABC):
         ...
 
     @abstractmethod
-    def is_before(self, other: Union['PyDatePeriod', 'PyDateTimePeriod', date, datetime]) -> bool:
+    def is_before(self, other: Union['PyDatePeriod', 'PyWallClockPeriod', date, datetime]) -> bool:
         ...
 
     @abstractmethod
-    def is_after(self, other: Union['PyDatePeriod', 'PyDateTimePeriod', date, datetime]) -> bool:
+    def is_after(self, other: Union['PyDatePeriod', 'PyWallClockPeriod', date, datetime]) -> bool:
         ...
 
     @abstractmethod
-    def get_interim(self, other: Union['PyDateTimePeriod', datetime]) -> Union['PyDateTimePeriod', None]:
+    def get_interim(self, other: Union['PyWallClockPeriod', datetime]) -> Union['PyWallClockPeriod', None]:
         ...
 
     @abstractmethod
-    def overlaps_with(self, other: Union['PyTimePeriod', 'PyDatePeriod', 'PyDateTimePeriod']) -> bool:
+    def overlaps_with(self, other: Union['PyTimePeriod', 'PyDatePeriod', 'PyWallClockPeriod']) -> bool:
         ...
 
     @abstractmethod
-    def overlapped_by(self, other: Union['PyTimePeriod', 'PyDatePeriod', 'PyDateTimePeriod']) -> bool:
+    def overlapped_by(self, other: Union['PyTimePeriod', 'PyDatePeriod', 'PyWallClockPeriod']) -> bool:
         ...
 
     @abstractmethod
     def get_overlap(self,
-                    other: Union['PyTimePeriod', 'PyDatePeriod', 'PyDateTimePeriod']
-                    ) -> Union['PyTimePeriod', 'PyDatePeriod', 'PyDateTimePeriod', None]:
+                    other: Union['PyTimePeriod', 'PyDatePeriod', 'PyWallClockPeriod']
+                    ) -> Union['PyTimePeriod', 'PyDatePeriod', 'PyWallClockPeriod', None]:
         ...
 
     @abstractmethod
     def get_disconnect(self,
-                       other: Union['PyTimePeriod', 'PyDatePeriod', 'PyDateTimePeriod']
-                       ) -> Union['PyTimePeriod', 'PyDatePeriod', 'PyDateTimePeriod', None]:
+                       other: Union['PyTimePeriod', 'PyDatePeriod', 'PyWallClockPeriod']
+                       ) -> Union['PyTimePeriod', 'PyDatePeriod', 'PyWallClockPeriod', None]:
         ...
 
 
-class PyWallClockPeriod(AbstractDateTimePeriod, ABC):
-    ...
-
-
 class PyAbsolutePeriod(AbstractDateTimePeriod, ABC):
-    ...
+
+    @property
+    @abstractmethod
+    def start(self) -> datetime:
+        ...
+
+    @property
+    @abstractmethod
+    def end(self) -> datetime:
+        ...
+
+    @abstractmethod
+    def is_before(self, other: Union['PyDatePeriod', 'PyAbsolutePeriod', date, datetime]) -> bool:
+        ...
+
+    @abstractmethod
+    def is_after(self, other: Union['PyDatePeriod', 'PyAbsolutePeriod', date, datetime]) -> bool:
+        ...
+
+    @abstractmethod
+    def get_interim(self, other: Union['PyAbsolutePeriod', datetime]) -> Union['PyAbsolutePeriod', None]:
+        ...
+
+    @abstractmethod
+    def overlaps_with(self, other: Union['PyTimePeriod', 'PyDatePeriod', 'PyAbsolutePeriod']) -> bool:
+        ...
+
+    @abstractmethod
+    def overlapped_by(self, other: Union['PyTimePeriod', 'PyDatePeriod', 'PyAbsolutePeriod']) -> bool:
+        ...
+
+    @abstractmethod
+    def get_overlap(self,
+                    other: Union['PyTimePeriod', 'PyDatePeriod', 'PyAbsolutePeriod']
+                    ) -> Union['PyTimePeriod', 'PyDatePeriod', 'PyAbsolutePeriod', None]:
+        ...
+
+    @abstractmethod
+    def get_disconnect(self,
+                       other: Union['PyTimePeriod', 'PyDatePeriod', 'PyAbsolutePeriod']
+                       ) -> Union['PyTimePeriod', 'PyDatePeriod', 'PyAbsolutePeriod', None]:
+        ...

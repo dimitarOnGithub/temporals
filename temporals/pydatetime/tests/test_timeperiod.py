@@ -1,8 +1,7 @@
 from zoneinfo import ZoneInfo
 import pytest
 from datetime import time, date, datetime
-from temporals.pydatetime import WallClockPeriod, AbsolutePeriod
-from temporals.pydatetime.periods import TimePeriod, DatetimePeriod, DatePeriod
+from temporals.pydatetime.periods import TimePeriod, DatePeriod, WallClockPeriod, AbsolutePeriod
 
 
 class TestTimePeriod:
@@ -38,13 +37,22 @@ class TestTimePeriod:
         self.period2 = TimePeriod(start=self.start, end=self.different_end)
         assert self.period1 != self.period2
 
-    def test_datetimeperiod_eq(self):
+    def test_eq_wallclock(self):
         self.start = time(8, 0, 0)
         self.end = time(10, 0, 0)
         self.period = TimePeriod(start=self.start, end=self.end)
         self.start_dt = datetime(2024, 1, 1, 8, 0, 0)
         self.end_dt = datetime(2024, 1, 1, 10, 0, 0)
-        self.period_dt = DatetimePeriod(start=self.start_dt, end=self.end_dt)
+        self.period_dt = WallClockPeriod(start=self.start_dt, end=self.end_dt)
+        assert self.period == self.period_dt
+
+    def test_eq_absolute(self):
+        self.start = time(8, 0, 0)
+        self.end = time(10, 0, 0)
+        self.period = TimePeriod(start=self.start, end=self.end)
+        self.start_dt = datetime(2024, 1, 1, 8, 0, 0)
+        self.end_dt = datetime(2024, 1, 1, 10, 0, 0)
+        self.period_dt = AbsolutePeriod(start=self.start_dt, end=self.end_dt)
         assert self.period == self.period_dt
 
     def test_invalid_eq(self):
@@ -54,12 +62,17 @@ class TestTimePeriod:
         self.period = TimePeriod(start=self.start, end=self.end)
         assert self.random_time != self.period
 
-    def test_membership(self):
+    def test_membership_time(self):
         self.random_time = time(9, 0, 0)
         self.start = time(8, 0, 0)
         self.end = time(10, 0, 0)
         self.period = TimePeriod(start=self.start, end=self.end)
         assert self.random_time in self.period
+
+    def test_membership_timeperiod(self):
+        self.start = time(8, 0, 0)
+        self.end = time(10, 0, 0)
+        self.period = TimePeriod(start=self.start, end=self.end)
 
         self.start = time(8, 30, 0)
         self.end = time(9, 0, 0)
@@ -71,12 +84,32 @@ class TestTimePeriod:
         self.eq_period = TimePeriod(start=self.start, end=self.end)
         assert self.eq_period in self.period
 
+    def test_membership_datetime(self):
+        self.start = time(8, 0, 0)
+        self.end = time(10, 0, 0)
+        self.period = TimePeriod(start=self.start, end=self.end)
+
         self.random_dt = datetime(2024, 1, 1, 10, 0, 0)
         assert self.random_dt in self.period
 
+    def test_membership_wallclock(self):
+        self.start = time(8, 0, 0)
+        self.end = time(10, 0, 0)
+        self.period = TimePeriod(start=self.start, end=self.end)
+
         self.start_dt = datetime(2024, 1, 1, 8, 30, 0)
         self.end_dt = datetime(2024, 1, 1, 9, 0, 0)
-        self.period_dt = DatetimePeriod(start=self.start_dt, end=self.end_dt)
+        self.period_dt = WallClockPeriod(start=self.start_dt, end=self.end_dt)
+        assert self.period_dt in self.period
+
+    def test_membership_absolute(self):
+        self.start = time(8, 0, 0)
+        self.end = time(10, 0, 0)
+        self.period = TimePeriod(start=self.start, end=self.end)
+
+        self.start_dt = datetime(2024, 1, 1, 8, 30, 0)
+        self.end_dt = datetime(2024, 1, 1, 9, 0, 0)
+        self.period_dt = AbsolutePeriod(start=self.start_dt, end=self.end_dt)
         assert self.period_dt in self.period
 
     def test_is_before(self):

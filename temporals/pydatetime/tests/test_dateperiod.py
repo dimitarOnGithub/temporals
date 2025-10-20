@@ -1,8 +1,7 @@
 from zoneinfo import ZoneInfo
 import pytest
 from datetime import time, date, datetime
-from temporals.pydatetime import WallClockPeriod, AbsolutePeriod
-from temporals.pydatetime.periods import DatePeriod, DatetimePeriod, TimePeriod
+from temporals.pydatetime.periods import DatePeriod, TimePeriod, WallClockPeriod, AbsolutePeriod
 
 
 class TestDatePeriod:
@@ -33,7 +32,7 @@ class TestDatePeriod:
         with pytest.raises(ValueError):
             DatePeriod(start=self.start, end=self.end)
 
-    def test_dateperiod_eq(self):
+    def test_eq_dateperiod(self):
         self.start = date(2024, 1, 1)
         self.end = date(2024, 1, 30)
         self.period1 = DatePeriod(start=self.start, end=self.end)
@@ -44,13 +43,22 @@ class TestDatePeriod:
         self.period2 = DatePeriod(start=self.start, end=self.different_end)
         assert self.period1 != self.period2
 
-    def test_datetimeperiod_eq(self):
+    def test_eq_wallclock(self):
         self.start = date(2024, 1, 1)
         self.end = date(2024, 1, 30)
         self.period = DatePeriod(start=self.start, end=self.end)
         self.start_dt = datetime(2024, 1, 1, 8, 0, 0)
         self.end_dt = datetime(2024, 1, 30, 10, 0, 0)
-        self.period_dt = DatetimePeriod(start=self.start_dt, end=self.end_dt)
+        self.period_dt = WallClockPeriod(start=self.start_dt, end=self.end_dt)
+        assert self.period == self.period_dt
+
+    def test_eq_absolute(self):
+        self.start = date(2024, 1, 1)
+        self.end = date(2024, 1, 30)
+        self.period = DatePeriod(start=self.start, end=self.end)
+        self.start_dt = datetime(2024, 1, 1, 8, 0, 0)
+        self.end_dt = datetime(2024, 1, 30, 10, 0, 0)
+        self.period_dt = AbsolutePeriod(start=self.start_dt, end=self.end_dt)
         assert self.period == self.period_dt
 
     def test_invalid_eq(self):
@@ -60,12 +68,17 @@ class TestDatePeriod:
         self.period = DatePeriod(start=self.start, end=self.end)
         assert self.random_date != self.period
 
-    def test_membership(self):
+    def test_membership_date(self):
         self.random_date = date(2024, 1, 15)
         self.start = date(2024, 1, 1)
         self.end = date(2024, 1, 30)
         self.period = DatePeriod(start=self.start, end=self.end)
         assert self.random_date in self.period
+
+    def test_membership_dateperiod(self):
+        self.start = date(2024, 1, 1)
+        self.end = date(2024, 1, 30)
+        self.period = DatePeriod(start=self.start, end=self.end)
 
         self.start = date(2024, 1, 5)
         self.end = date(2024, 1, 10)
@@ -77,12 +90,32 @@ class TestDatePeriod:
         self.eq_period = DatePeriod(start=self.start, end=self.end)
         assert self.eq_period in self.period
 
+    def test_membership_datetime(self):
+        self.start = date(2024, 1, 1)
+        self.end = date(2024, 1, 30)
+        self.period = DatePeriod(start=self.start, end=self.end)
+
         self.random_dt = datetime(2024, 1, 1, 10, 0, 0)
         assert self.random_dt in self.period
 
+    def test_membership_wallclock(self):
+        self.start = date(2024, 1, 1)
+        self.end = date(2024, 1, 30)
+        self.period = DatePeriod(start=self.start, end=self.end)
+
         self.start_dt = datetime(2024, 1, 1, 8, 30, 0)
         self.end_dt = datetime(2024, 1, 2, 9, 0, 0)
-        self.period_dt = DatetimePeriod(start=self.start_dt, end=self.end_dt)
+        self.period_dt = WallClockPeriod(start=self.start_dt, end=self.end_dt)
+        assert self.period_dt in self.period
+
+    def test_membership_absolute(self):
+        self.start = date(2024, 1, 1)
+        self.end = date(2024, 1, 30)
+        self.period = DatePeriod(start=self.start, end=self.end)
+
+        self.start_dt = datetime(2024, 1, 1, 8, 30, 0)
+        self.end_dt = datetime(2024, 1, 2, 9, 0, 0)
+        self.period_dt = AbsolutePeriod(start=self.start_dt, end=self.end_dt)
         assert self.period_dt in self.period
 
     def test_is_before(self):
@@ -106,12 +139,22 @@ class TestDatePeriod:
 
         self.other_start = datetime(2024, 1, 10, 8, 0)
         self.other_end = datetime(2024, 1, 12, 8, 0)
-        self.other_period = DatetimePeriod(start=self.other_start, end=self.other_end)
+        self.other_period = WallClockPeriod(start=self.other_start, end=self.other_end)
         assert self.period.is_before(self.other_period) is False
 
         self.other_start = datetime(2024, 1, 11, 8, 0)
         self.other_end = datetime(2024, 1, 12, 8, 0)
-        self.other_period = DatetimePeriod(start=self.other_start, end=self.other_end)
+        self.other_period = WallClockPeriod(start=self.other_start, end=self.other_end)
+        assert self.period.is_before(self.other_period) is True
+
+        self.other_start = datetime(2024, 1, 10, 8, 0)
+        self.other_end = datetime(2024, 1, 12, 8, 0)
+        self.other_period = AbsolutePeriod(start=self.other_start, end=self.other_end)
+        assert self.period.is_before(self.other_period) is False
+
+        self.other_start = datetime(2024, 1, 11, 8, 0)
+        self.other_end = datetime(2024, 1, 12, 8, 0)
+        self.other_period = AbsolutePeriod(start=self.other_start, end=self.other_end)
         assert self.period.is_before(self.other_period) is True
 
     def test_is_after(self):
@@ -135,12 +178,22 @@ class TestDatePeriod:
 
         self.other_start = datetime(2024, 1, 1, 8, 0)
         self.other_end = datetime(2024, 1, 10, 8, 0)
-        self.other_period = DatetimePeriod(start=self.other_start, end=self.other_end)
+        self.other_period = WallClockPeriod(start=self.other_start, end=self.other_end)
         assert self.period.is_after(self.other_period) is False
 
         self.other_start = datetime(2024, 1, 1, 8, 0)
         self.other_end = datetime(2024, 1, 9, 8, 0)
-        self.other_period = DatetimePeriod(start=self.other_start, end=self.other_end)
+        self.other_period = WallClockPeriod(start=self.other_start, end=self.other_end)
+        assert self.period.is_after(self.other_period) is True
+
+        self.other_start = datetime(2024, 1, 1, 8, 0)
+        self.other_end = datetime(2024, 1, 10, 8, 0)
+        self.other_period = AbsolutePeriod(start=self.other_start, end=self.other_end)
+        assert self.period.is_after(self.other_period) is False
+
+        self.other_start = datetime(2024, 1, 1, 8, 0)
+        self.other_end = datetime(2024, 1, 9, 8, 0)
+        self.other_period = AbsolutePeriod(start=self.other_start, end=self.other_end)
         assert self.period.is_after(self.other_period) is True
 
     def test_to_wallclock_time(self):
@@ -190,7 +243,7 @@ class TestDatePeriod:
         abs_period = self.period.to_absolute(specific_time=self.other_period, timezone=ZoneInfo("Europe/Paris"))
         _test_start = datetime(2024, 1, 10, 8, 0, 0, tzinfo=ZoneInfo("Europe/Paris"))
         _test_end = datetime(2024, 1, 20, 10, 0, 0, tzinfo=ZoneInfo("Europe/Paris"))
-        assert abs_period == WallClockPeriod(start=_test_start, end=_test_end)
+        assert abs_period == AbsolutePeriod(start=_test_start, end=_test_end)
 
     def test_get_interim(self):
         self.start = date(2024, 1, 10)
