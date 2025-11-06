@@ -85,10 +85,12 @@ class TestDatePeriod:
         self.inner_period = DatePeriod(start=self.start, end=self.end)
         assert self.inner_period in self.period
 
+    def test_membership_dateperiod_equal(self):
         self.start = date(2024, 1, 1)
         self.end = date(2024, 1, 30)
+        self.period = DatePeriod(start=self.start, end=self.end)
         self.eq_period = DatePeriod(start=self.start, end=self.end)
-        assert self.eq_period in self.period
+        assert self.eq_period not in self.period
 
     def test_membership_datetime(self):
         self.start = date(2024, 1, 1)
@@ -108,6 +110,16 @@ class TestDatePeriod:
         self.period_dt = WallClockPeriod(start=self.start_dt, end=self.end_dt)
         assert self.period_dt in self.period
 
+    def test_membership_wallclock_equal(self):
+        self.start = date(2024, 1, 1)
+        self.end = date(2024, 1, 30)
+        self.period = DatePeriod(start=self.start, end=self.end)
+
+        self.start_dt = datetime(2024, 1, 1, 8, 30, 0)
+        self.end_dt = datetime(2024, 1, 30, 9, 0, 0)
+        self.period_dt = WallClockPeriod(start=self.start_dt, end=self.end_dt)
+        assert self.period_dt not in self.period
+
     def test_membership_absolute(self):
         self.start = date(2024, 1, 1)
         self.end = date(2024, 1, 30)
@@ -117,6 +129,16 @@ class TestDatePeriod:
         self.end_dt = datetime(2024, 1, 2, 9, 0, 0)
         self.period_dt = AbsolutePeriod(start=self.start_dt, end=self.end_dt)
         assert self.period_dt in self.period
+
+    def test_membership_absolute_equal(self):
+        self.start = date(2024, 1, 1)
+        self.end = date(2024, 1, 30)
+        self.period = DatePeriod(start=self.start, end=self.end)
+
+        self.start_dt = datetime(2024, 1, 1, 8, 30, 0)
+        self.end_dt = datetime(2024, 1, 30, 9, 0, 0)
+        self.period_dt = AbsolutePeriod(start=self.start_dt, end=self.end_dt)
+        assert self.period_dt not in self.period
 
     def test_is_before(self):
         self.start = date(2024, 1, 1)

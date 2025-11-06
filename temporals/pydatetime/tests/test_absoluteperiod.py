@@ -1,6 +1,8 @@
+from zoneinfo import ZoneInfo
+
 import pytest
 from datetime import time, date, datetime
-from temporals.pydatetime.periods import TimePeriod, DatePeriod, AbsolutePeriod
+from temporals.pydatetime.periods import TimePeriod, DatePeriod, AbsolutePeriod, WallClockPeriod
 from temporals.exceptions import TimeAmbiguityError
 
 
@@ -116,7 +118,15 @@ class TestAbsolutePeriod:
         self.period = AbsolutePeriod(start=self.start, end=self.end)
         assert self.random_dt != self.period
 
-    def test_valid_membership(self):
+    def test_timeshift_eq(self):
+        # shift forward by 1 hour
+        period = AbsolutePeriod(start=datetime(2025, 3, 30, 1, 0, tzinfo=ZoneInfo(key='Europe/Paris')),
+                                end=datetime(2025, 3, 31, 2, 0, tzinfo=ZoneInfo(key='Europe/Paris')))
+        other_period = WallClockPeriod(start=datetime(2025, 3, 30, 1, 0, tzinfo=ZoneInfo(key='Europe/Paris')),
+                                       end=datetime(2025, 3, 31, 2, 0, tzinfo=ZoneInfo(key='Europe/Paris')))
+        assert not period == other_period
+
+    def test_valid_membership_time(self):
         # Same day period
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 1, 12, 0)
@@ -126,13 +136,31 @@ class TestAbsolutePeriod:
         self.time = time(10, 0)
         assert self.time in self.period
 
+    def test_valid_membership_date(self):
+        # Same day period
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 1, 12, 0)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
+
         # Date test
         self.date = date(2024, 1, 1)
         assert self.date in self.period
 
+    def test_valid_membership_datetime(self):
+        # Same day period
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 1, 12, 0)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
+
         # Datetime test
         self.datetime = datetime(2024, 1, 1, 12, 0)
         assert self.datetime in self.period
+
+    def test_valid_membership_timeperiod(self):
+        # Same day period
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 1, 12, 0)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
         # Time period test
         self.time_period = TimePeriod(
@@ -141,6 +169,12 @@ class TestAbsolutePeriod:
         )
         assert self.time_period in self.period
 
+    def test_valid_membership_absolute(self):
+        # Same day period
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 1, 12, 0)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
+
         # AbsolutePeriod test
         self.dt_period = AbsolutePeriod(
             start=datetime(2024, 1, 1, 9, 0),
@@ -148,6 +182,7 @@ class TestAbsolutePeriod:
         )
         assert self.dt_period in self.period
 
+    def test_valid_membership_24h_time(self):
         # 24h period
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 2, 12, 0)
@@ -159,9 +194,21 @@ class TestAbsolutePeriod:
         self.time = time(13, 0)
         assert self.time in self.period
 
+    def test_valid_membership_24h_date(self):
+        # 24h period
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 2, 12, 0)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
+
         # Date test
         self.date = date(2024, 1, 2)
         assert self.date in self.period
+
+    def test_valid_membership_24h_timeperiod(self):
+        # 24h period
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 2, 12, 0)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
         # Time period test
         self.time_period = TimePeriod(
@@ -176,7 +223,7 @@ class TestAbsolutePeriod:
         )
         assert self.time_period in self.period
 
-    def test_invalid_membership(self):
+    def test_invalid_membership_time(self):
         # Same day period
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 1, 12, 0)
@@ -184,16 +231,33 @@ class TestAbsolutePeriod:
 
         # Time test
         self.time = time(17, 0)
-        print(self.time in self.period)
         assert self.time not in self.period
+
+    def test_invalid_membership_date(self):
+        # Same day period
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 1, 12, 0)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
         # Date test
         self.date = date(2024, 1, 2)
         assert self.date not in self.period
 
+    def test_invalid_membership_datetime(self):
+        # Same day period
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 1, 12, 0)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
+
         # Datetime test
         self.datetime = datetime(2024, 1, 1, 13, 0)
         assert self.datetime not in self.period
+
+    def test_invalid_membership_overlap(self):
+        # Same day period
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 1, 12, 0)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
 
         # Time period test - overlapping
         self.time_period = TimePeriod(
@@ -201,6 +265,17 @@ class TestAbsolutePeriod:
             end=time(14, 0)
         )
         assert self.time_period not in self.period
+
+    def test_invalid_membership_equal(self):
+        # Same day period
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 1, 12, 0)
+        self.period = AbsolutePeriod(start=self.start, end=self.end)
+        self.eq_period_wc = WallClockPeriod(start=self.start, end=self.end)
+        self.eq_period_abs = AbsolutePeriod(start=self.start, end=self.end)
+
+        assert self.eq_period_wc not in self.period
+        assert self.eq_period_abs not in self.period
 
     def test_is_before(self):
         self.start = datetime(2024, 1, 1, 8, 0)

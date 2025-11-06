@@ -4,19 +4,18 @@ from zoneinfo import ZoneInfo
 from temporals.exceptions import NonexistentTimeError
 from temporals.pydatetime.periods import TimePeriod, DatePeriod, WallClockPeriod, AbsolutePeriod
 
-# TODO: Fix reference to private attribute _total
 class TestDuration:
 
     def test_time(self):
         period = TimePeriod(start=time(10, 0, 0), end=time(12, 0, 0))
         assert period.duration.hours == 2
-        assert period.duration._total == 7200
+        assert period.duration.total_seconds == 7200
 
         period = TimePeriod(start=time(10, 35, 15), end=time(12, 0, 0))
         assert period.duration.hours == 1
         assert period.duration.minutes == 24
         assert period.duration.seconds == 45
-        assert period.duration._total == 5085
+        assert period.duration.total_seconds == 5085
 
         period = TimePeriod(start=time(10, 58, 59), end=time(12, 0, 0))
         assert period.duration.hours == 1
@@ -39,7 +38,7 @@ class TestDuration:
         assert period.duration.months == 2
         assert period.duration.days == 0
         # Total is less than the leap date test below because February has fewer days
-        assert period.duration._total == 5097600
+        assert period.duration.total_seconds == 5097600
 
 
     def test_leap_date(self):
@@ -47,7 +46,7 @@ class TestDuration:
         assert period.duration.months == 2
         assert period.duration.days == 0
         # Total is more than the non-leap date test above because February has more days
-        assert period.duration._total == 5184000
+        assert period.duration.total_seconds == 5184000
 
     def test_wallclock(self):
         period = WallClockPeriod(start=datetime(2025, 1, 1, 10, 0, 0),
