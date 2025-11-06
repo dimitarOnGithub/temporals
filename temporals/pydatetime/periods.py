@@ -1690,22 +1690,6 @@ class AbsolutePeriod(interface.PyAbsolutePeriod):
                 <url to doc>
                 for more information.
         """
-        """
-        if isinstance(item, WallClockPeriod) or isinstance(item, AbsolutePeriod):
-            if isinstance(item, AbsolutePeriod):
-                # We can abort early if the duration of the provided period is longer than the duration of this instance
-                if item.duration > self.duration:
-                    return False
-            if self.start == item.start and self.end == item.end:
-                # Equality
-                return False
-            return (self.start <= item.start and item.end <= self.end) and (self.duration > item.duration)
-        if isinstance(item, DatePeriod):
-            if self.start.date() == item.start and self.end.date() == item.end:
-                # Equality
-                return False
-            return self.start.date() <= item.start and item.end <= self.end.date()
-        """
         if isinstance(item, AbsolutePeriod) or isinstance(item, WallClockPeriod):
             if isinstance(item, WallClockPeriod):
                 # We can abort early if the duration of the provided period is longer than the duration of this instance
