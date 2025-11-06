@@ -1,6 +1,6 @@
 import pytest
 from datetime import time, date, datetime
-from temporals.pydatetime.periods import TimePeriod, DatePeriod, WallClockPeriod
+from temporals.pydatetime.periods import TimePeriod, DatePeriod, WallClockPeriod, AbsolutePeriod
 from temporals.exceptions import TimeAmbiguityError
 
 
@@ -116,7 +116,7 @@ class TestWallClockPeriod:
         self.period = WallClockPeriod(start=self.start, end=self.end)
         assert self.random_dt != self.period
 
-    def test_valid_membership(self):
+    def test_valid_membership_time(self):
         # Same day period
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 1, 12, 0)
@@ -126,13 +126,31 @@ class TestWallClockPeriod:
         self.time = time(10, 0)
         assert self.time in self.period
 
+    def test_valid_membership_date(self):
+        # Same day period
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 1, 12, 0)
+        self.period = WallClockPeriod(start=self.start, end=self.end)
+
         # Date test
         self.date = date(2024, 1, 1)
         assert self.date in self.period
 
+    def test_valid_membership_datetime(self):
+        # Same day period
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 1, 12, 0)
+        self.period = WallClockPeriod(start=self.start, end=self.end)
+
         # Datetime test
         self.datetime = datetime(2024, 1, 1, 12, 0)
         assert self.datetime in self.period
+
+    def test_valid_membership_timeperiod(self):
+        # Same day period
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 1, 12, 0)
+        self.period = WallClockPeriod(start=self.start, end=self.end)
 
         # Time period test
         self.time_period = TimePeriod(
@@ -141,6 +159,12 @@ class TestWallClockPeriod:
         )
         assert self.time_period in self.period
 
+    def test_valid_membership_wallclock(self):
+        # Same day period
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 1, 12, 0)
+        self.period = WallClockPeriod(start=self.start, end=self.end)
+
         # WallClockPeriod test
         self.dt_period = WallClockPeriod(
             start=datetime(2024, 1, 1, 9, 0),
@@ -148,6 +172,7 @@ class TestWallClockPeriod:
         )
         assert self.dt_period in self.period
 
+    def test_valid_membership_24h_time(self):
         # 24h period
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 2, 12, 0)
@@ -159,9 +184,21 @@ class TestWallClockPeriod:
         self.time = time(13, 0)
         assert self.time in self.period
 
+    def test_valid_membership_24h_date(self):
+        # 24h period
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 2, 12, 0)
+        self.period = WallClockPeriod(start=self.start, end=self.end)
+
         # Date test
         self.date = date(2024, 1, 2)
         assert self.date in self.period
+
+    def test_valid_membership_24_timeperiod(self):
+        # 24h period
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 2, 12, 0)
+        self.period = WallClockPeriod(start=self.start, end=self.end)
 
         # Time period test
         self.time_period = TimePeriod(
@@ -176,7 +213,7 @@ class TestWallClockPeriod:
         )
         assert self.time_period in self.period
 
-    def test_invalid_membership(self):
+    def test_invalid_membership_time(self):
         # Same day period
         self.start = datetime(2024, 1, 1, 8, 0)
         self.end = datetime(2024, 1, 1, 12, 0)
@@ -184,16 +221,33 @@ class TestWallClockPeriod:
 
         # Time test
         self.time = time(17, 0)
-        print(self.time in self.period)
         assert self.time not in self.period
+
+    def test_invalid_membership_date(self):
+        # Same day period
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 1, 12, 0)
+        self.period = WallClockPeriod(start=self.start, end=self.end)
 
         # Date test
         self.date = date(2024, 1, 2)
         assert self.date not in self.period
 
+    def test_invalid_membership_datetime(self):
+        # Same day period
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 1, 12, 0)
+        self.period = WallClockPeriod(start=self.start, end=self.end)
+
         # Datetime test
         self.datetime = datetime(2024, 1, 1, 13, 0)
         assert self.datetime not in self.period
+
+    def test_invalid_membership_overlap(self):
+        # Same day period
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 1, 12, 0)
+        self.period = WallClockPeriod(start=self.start, end=self.end)
 
         # Time period test - overlapping
         self.time_period = TimePeriod(
@@ -201,6 +255,17 @@ class TestWallClockPeriod:
             end=time(14, 0)
         )
         assert self.time_period not in self.period
+
+    def test_invalid_membership_equal(self):
+        # Same day period
+        self.start = datetime(2024, 1, 1, 8, 0)
+        self.end = datetime(2024, 1, 1, 12, 0)
+        self.period = WallClockPeriod(start=self.start, end=self.end)
+        self.eq_period_wc = WallClockPeriod(start=self.start, end=self.end)
+        self.eq_period_abs = AbsolutePeriod(start=self.start, end=self.end)
+
+        assert self.eq_period_wc not in self.period
+        assert self.eq_period_abs not in self.period
 
     def test_is_before(self):
         self.start = datetime(2024, 1, 1, 8, 0)

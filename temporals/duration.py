@@ -24,6 +24,21 @@ class Duration(AbstractDuration):
         return (f"Duration(total_seconds={self._total}, years={self._years}, months={self._months}, days={self._days}, "
                 f"hours={self._hours}, minutes={self._minutes}, seconds={self._seconds})")
 
+    def __eq__(self, other):
+        if not isinstance(other, AbstractDuration):
+            raise TypeError(f"'==' not supported between instances of 'Duration' and '{type(other)}'")
+        return self.total_seconds == other.total_seconds
+
+    def __lt__(self, other):
+        if not isinstance(other, AbstractDuration):
+            raise TypeError(f"'<' not supported between instances of 'Duration' and '{type(other)}'")
+        return self.total_seconds < other.total_seconds
+
+    def __gt__(self, other):
+        if not isinstance(other, AbstractDuration):
+            raise TypeError(f"'>' not supported between instances of 'Duration' and '{type(other)}'")
+        return self.total_seconds > other.total_seconds
+
     @classmethod
     def from_seconds(cls, seconds: int):
         verify_type('seconds', int, seconds)
@@ -40,6 +55,10 @@ class Duration(AbstractDuration):
             days = hours // 24
             hours = hours - (days * 24)
         return cls(total_seconds=total, years=0, months=0, days=days, hours=hours, minutes=minutes, seconds=seconds)
+
+    @property
+    def total_seconds(self) -> int:
+        return self._total
 
     @property
     def seconds(self) -> int:

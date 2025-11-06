@@ -79,10 +79,12 @@ class TestTimePeriod:
         self.inner_period = TimePeriod(start=self.start, end=self.end)
         assert self.inner_period in self.period
 
+    def test_membership_equal_timeperiod(self):
         self.start = time(8, 0, 0)
         self.end = time(10, 0, 0)
+        self.period = TimePeriod(start=self.start, end=self.end)
         self.eq_period = TimePeriod(start=self.start, end=self.end)
-        assert self.eq_period in self.period
+        assert self.eq_period not in self.period
 
     def test_membership_datetime(self):
         self.start = time(8, 0, 0)
@@ -102,6 +104,16 @@ class TestTimePeriod:
         self.period_dt = WallClockPeriod(start=self.start_dt, end=self.end_dt)
         assert self.period_dt in self.period
 
+    def test_membership_wallclock_equal(self):
+        self.start = time(8, 0, 0)
+        self.end = time(10, 0, 0)
+        self.period = TimePeriod(start=self.start, end=self.end)
+
+        self.start_dt = datetime(2024, 1, 1, 8, 0, 0)
+        self.end_dt = datetime(2024, 1, 1, 10, 0, 0)
+        self.period_dt = WallClockPeriod(start=self.start_dt, end=self.end_dt)
+        assert self.period_dt not in self.period
+
     def test_membership_absolute(self):
         self.start = time(8, 0, 0)
         self.end = time(10, 0, 0)
@@ -111,6 +123,16 @@ class TestTimePeriod:
         self.end_dt = datetime(2024, 1, 1, 9, 0, 0)
         self.period_dt = AbsolutePeriod(start=self.start_dt, end=self.end_dt)
         assert self.period_dt in self.period
+
+    def test_membership_absolute_equal(self):
+        self.start = time(8, 0, 0)
+        self.end = time(10, 0, 0)
+        self.period = TimePeriod(start=self.start, end=self.end)
+
+        self.start_dt = datetime(2024, 1, 1, 8, 0, 0)
+        self.end_dt = datetime(2024, 1, 1, 10, 0, 0)
+        self.period_dt = AbsolutePeriod(start=self.start_dt, end=self.end_dt)
+        assert self.period_dt not in self.period
 
     def test_is_before(self):
         self.start = time(10, 0, 0)

@@ -1,4 +1,3 @@
-# TODO: fix membership evaluations
 from . import interface
 import calendar
 from typing import Union
@@ -117,18 +116,21 @@ class TimePeriod(interface.PyTimePeriod):
             overlap
             disconnect
         """
+        _start = None
+        _end = None
         if isinstance(item, interface.PyTimePeriod):
-            """ Only return True if the start and end times of `item` are within the actual time duration of this 
-            period.
-            """
-            return self.start <= item.start and item.end <= self.end
+            _start = item.start
+            _end = item.end
         if isinstance(item, interface.PyAbsolutePeriod) or isinstance(item, interface.PyWallClockPeriod):
-            return item.start.time() >= self.start and item.end.time() <= self.end
+            _start = item.start.time()
+            _end = item.end.time()
         if isinstance(item, datetime):
             item = item.time()
         if isinstance(item, time):
             return self.start <= item <= self.end
-        return False
+        if self.start == _start and self.end == _end:
+            return False
+        return self.start <= _start and _end <= self.end
 
     def is_before(self, other: Union['interface.PyTimePeriod', time]) -> bool:
         """ Test if this period ends before the provided `other` value. This check will evaluate as True in the
@@ -562,18 +564,21 @@ class DatePeriod(interface.PyDatePeriod):
             get_overlap
             get_disconnect
         """
+        _start = None
+        _end = None
         if isinstance(item, interface.PyDatePeriod):
-            """ Only return True if the start and end times of `item` are within the actual time duration of this 
-            period.
-            """
-            return self.start <= item.start and item.end <= self.end
+            _start = item.start
+            _end = item.end
         if isinstance(item, interface.PyAbsolutePeriod) or isinstance(item, interface.PyWallClockPeriod):
-            return item.start.date() >= self.start and item.end.date() <= self.end
+            _start = item.start.date()
+            _end = item.end.date()
         if isinstance(item, datetime):
             item = item.date()
         if isinstance(item, date):
             return self.start <= item <= self.end
-        return False
+        if self.start == _start and self.end == _end:
+            return False
+        return self.start <= _start and _end <= self.end
 
     def is_before(self,
                   other: Union['interface.PyDatePeriod', 'interface.PyAbsolutePeriod', 'interface.PyWallClockPeriod', datetime, date]
@@ -1098,15 +1103,25 @@ class WallClockPeriod(interface.PyWallClockPeriod):
                 <url to doc>
                 for more information.
         """
-        if isinstance(item, WallClockPeriod):
-            return self.start <= item.start and item.end <= self.end
+        if isinstance(item, WallClockPeriod) or isinstance(item, AbsolutePeriod):
+            if isinstance(item, AbsolutePeriod):
+                # We can abort early if the duration of the provided period is longer than the duration of this instance
+                if item.duration > self.duration:
+                    return False
+            if self.start == item.start and self.end == item.end:
+                # Equality
+                return False
+            return (self.start <= item.start and item.end <= self.end) and (self.duration > item.duration)
         if isinstance(item, DatePeriod):
+            if self.start.date() == item.start and self.end.date() == item.end:
+                # Equality
+                return False
             return self.start.date() <= item.start and item.end <= self.end.date()
         if isinstance(item, TimePeriod):
             if self._time_repeats(item):
                 raise TimeAmbiguityError(f"The provided TimePeriod '{item}' exist within this period "
                                          f"('{self}') more than once. For more information on this error, "
-                                         f"see https://github.com/dimitarOnGithub/temporals/wiki/Misc")
+                                         f"see https://github.com/dimitarOnGithub/temporals/wiki/Errors")
             if self.duration.days == 1:
                 if item.start < self.start.time():
                     if item.end <= self.end.time():
@@ -1129,7 +1144,7 @@ class WallClockPeriod(interface.PyWallClockPeriod):
             if self._time_repeats(item):
                 raise TimeAmbiguityError(f"The provided unit of time ('{item}') exist within this period "
                                          f"('{self}')  more than once. For more information on this error, "
-                                         f"see https://github.com/dimitarOnGithub/temporals/wiki/Misc")
+                                         f"see https://github.com/dimitarOnGithub/temporals/wiki/Errors")
             if self.duration.days == 1:
                 return True
             return self.start.time() <= item <= self.end.time()
@@ -1230,7 +1245,7 @@ class WallClockPeriod(interface.PyWallClockPeriod):
             if self._time_repeats(other):
                 raise TimeAmbiguityError(f"The provided TimePeriod '{other}' exist within this period "
                                          f"('{self}') more than once. For more information on this error, "
-                                         f"see https://github.com/dimitarOnGithub/temporals/wiki/Misc")
+                                         f"see https://github.com/dimitarOnGithub/temporals/wiki/Errors")
             if self.start.date() < self.end.date():
                 # Day stretches overnight - the start time must be before the start of this period but also after the
                 # end of it
@@ -1286,7 +1301,7 @@ class WallClockPeriod(interface.PyWallClockPeriod):
             if self._time_repeats(other):
                 raise TimeAmbiguityError(f"The provided TimePeriod '{other}' exist within this WallClockPeriod "
                                          f"('{self}') more than once. For more information on this error, "
-                                         f"see https://github.com/dimitarOnGithub/temporals/wiki/Misc")
+                                         f"see https://github.com/dimitarOnGithub/temporals/wiki/Errors")
             if self.start.date() < self.end.date():
                 # Day stretches overnight - the start time must be after the start of this period but also after the
                 # end of it
@@ -1675,15 +1690,25 @@ class AbsolutePeriod(interface.PyAbsolutePeriod):
                 <url to doc>
                 for more information.
         """
-        if isinstance(item, AbsolutePeriod):
-            return self.start <= item.start and item.end <= self.end
+        if isinstance(item, AbsolutePeriod) or isinstance(item, WallClockPeriod):
+            if isinstance(item, WallClockPeriod):
+                # We can abort early if the duration of the provided period is longer than the duration of this instance
+                if item.duration > self.duration:
+                    return False
+            if self.start == item.start and self.end == item.end:
+                # Equality
+                return False
+            return (self.start <= item.start and item.end <= self.end) and (self.duration > item.duration)
         if isinstance(item, DatePeriod):
+            if self.start.date() == item.start and self.end.date() == item.end:
+                # Equality
+                return False
             return self.start.date() <= item.start and item.end <= self.end.date()
         if isinstance(item, TimePeriod):
             if self._time_repeats(item):
                 raise TimeAmbiguityError(f"The provided TimePeriod '{item}' exist within this AbsolutePeriod "
                                          f"('{self}') more than once. For more information on this error, "
-                                         f"see https://github.com/dimitarOnGithub/temporals/wiki/Misc")
+                                         f"see https://github.com/dimitarOnGithub/temporals/wiki/Errors")
             if self.duration.days == 1:
                 if item.start < self.start.time():
                     if item.end <= self.end.time():
@@ -1706,7 +1731,7 @@ class AbsolutePeriod(interface.PyAbsolutePeriod):
             if self._time_repeats(item):
                 raise TimeAmbiguityError(f"The provided unit of time ('{item}') exist within this AbsolutePeriod "
                                          f"('{self}')  more than once. For more information on this error, "
-                                         f"see https://github.com/dimitarOnGithub/temporals/wiki/Misc")
+                                         f"see https://github.com/dimitarOnGithub/temporals/wiki/Errors")
             if self.duration.days == 1:
                 return True
             return self.start.time() <= item <= self.end.time()
@@ -1807,7 +1832,7 @@ class AbsolutePeriod(interface.PyAbsolutePeriod):
             if self._time_repeats(other):
                 raise TimeAmbiguityError(f"The provided TimePeriod '{other}' exist within this AbsolutePeriod "
                                          f"('{self}') more than once. For more information on this error, "
-                                         f"see https://github.com/dimitarOnGithub/temporals/wiki/Misc")
+                                         f"see https://github.com/dimitarOnGithub/temporals/wiki/Errors")
             if self.start.date() < self.end.date():
                 # Day stretches overnight - the start time must be before the start of this period but also after the
                 # end of it
@@ -1863,7 +1888,7 @@ class AbsolutePeriod(interface.PyAbsolutePeriod):
             if self._time_repeats(other):
                 raise TimeAmbiguityError(f"The provided TimePeriod '{other}' exist within this AbsolutePeriod "
                                          f"('{self}') more than once. For more information on this error, "
-                                         f"see https://github.com/dimitarOnGithub/temporals/wiki/Misc")
+                                         f"see https://github.com/dimitarOnGithub/temporals/wiki/Errors")
             if self.start.date() < self.end.date():
                 # Day stretches overnight - the start time must be after the start of this period but also after the
                 # end of it

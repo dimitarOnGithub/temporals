@@ -6,6 +6,11 @@ class AbstractDuration(ABC):
 
     @property
     @abstractmethod
+    def total_seconds(self) -> int:
+        """ Return the number of total seconds in this duration """
+
+    @property
+    @abstractmethod
     def seconds(self) -> int:
         """ Return the seconds in the Duration; not the total duration to seconds! """
 
