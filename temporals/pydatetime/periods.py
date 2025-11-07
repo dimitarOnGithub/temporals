@@ -1,6 +1,5 @@
 from . import interface
 import calendar
-from typing import Union
 from zoneinfo import ZoneInfo
 from datetime import time, date, datetime, timedelta
 from temporals.interfaces import AbstractDuration
@@ -60,7 +59,7 @@ class TimePeriod(interface.PyTimePeriod):
         return self._end
 
     @property
-    def duration(self) -> 'AbstractDuration':
+    def duration(self) -> AbstractDuration:
         return self._duration
 
     def __str__(self):
@@ -132,7 +131,7 @@ class TimePeriod(interface.PyTimePeriod):
             return False
         return self.start <= _start and _end <= self.end
 
-    def is_before(self, other: Union['interface.PyTimePeriod', time]) -> bool:
+    def is_before(self, other: interface.PyTimePeriod | time) -> bool:
         """ Test if this period ends before the provided `other` value. This check will evaluate as True in the
         following scenario:
 
@@ -154,7 +153,7 @@ class TimePeriod(interface.PyTimePeriod):
             return self.end <= other.start
         return False
 
-    def is_after(self, other: Union['interface.PyTimePeriod', time]) -> bool:
+    def is_after(self, other: interface.PyTimePeriod | time) -> bool:
         """ Test if this period starts after the provided `other` value. This check will evaluate as True in the
         following scenario:
 
@@ -177,8 +176,7 @@ class TimePeriod(interface.PyTimePeriod):
             return other.end <= self.start
         return False
 
-    def get_interim(self,
-                    other: Union['interface.PyTimePeriod', time]) -> Union['interface.PyTimePeriod', None]:
+    def get_interim(self, other: interface.PyTimePeriod | time) -> interface.PyTimePeriod | None:
         """ Method returns the TimePeriod between the start/end of the provided period, if `other` is a TimePeriod,
         or the TimePeriod between the point in time and the start/end of this period, depending on whether the same is
         occurring before the start of this period or after the end of it.
@@ -214,7 +212,7 @@ class TimePeriod(interface.PyTimePeriod):
             return TimePeriod(start=_start, end=_end)
 
     def overlaps_with(self,
-                      other: Union['interface.PyTimePeriod', 'interface.PyAbsolutePeriod', 'interface.PyWallClockPeriod']
+                      other: interface.PyTimePeriod | interface.PyAbsolutePeriod | interface.PyWallClockPeriod
                       ) -> bool:
         """ Test if this period overlaps with another period that has begun before this one. This check will evaluate
         as True in the following scenario:
@@ -256,7 +254,7 @@ class TimePeriod(interface.PyTimePeriod):
         return False
 
     def overlapped_by(self,
-                      other: Union['interface.PyTimePeriod', 'interface.PyAbsolutePeriod', 'interface.PyWallClockPeriod']
+                      other: interface.PyTimePeriod | interface.PyAbsolutePeriod | interface.PyWallClockPeriod
                       ) -> bool:
         """ Test if this period is overlapped by the other period. This check will evaluate True in the following
         scenario:
@@ -297,8 +295,8 @@ class TimePeriod(interface.PyTimePeriod):
         return False
 
     def get_overlap(self,
-                    other: Union['interface.PyTimePeriod', 'interface.PyAbsolutePeriod', 'interface.PyWallClockPeriod']
-                    ) -> Union['interface.PyTimePeriod', None]:
+                    other: interface.PyTimePeriod | interface.PyAbsolutePeriod | interface.PyWallClockPeriod
+                    ) -> interface.PyTimePeriod | None:
         """ Method returns the overlapping interval between the two periods as a new TimePeriod instance
 
         >>> period1_start = time(8, 0, 0)
@@ -352,8 +350,8 @@ class TimePeriod(interface.PyTimePeriod):
         return None
 
     def get_disconnect(self,
-                       other: Union['interface.PyTimePeriod', 'interface.PyAbsolutePeriod', 'interface.PyWallClockPeriod']
-                       ) -> Union['interface.PyTimePeriod', None]:
+                       other: interface.PyTimePeriod | interface.PyAbsolutePeriod | interface.PyWallClockPeriod
+                       ) -> interface.PyTimePeriod | None:
         """ Method returns the disconnect interval from the point of view of the invoking period. This means the time
         disconnect from the start of this period until the start of the period to which this period is being compared
         to. Since the span of time is relative to each of the two periods, this method will always return different
@@ -402,7 +400,7 @@ class TimePeriod(interface.PyTimePeriod):
             return TimePeriod(start=start_time, end=self.end)
         return None
 
-    def to_wallclock(self, specific_date: Union['interface.PyDatePeriod', date]) -> 'interface.PyWallClockPeriod':
+    def to_wallclock(self, specific_date: interface.PyDatePeriod | date) -> interface.PyWallClockPeriod:
         """ This method allows you to combine the TimePeriod with either a datetime.date or a DatePeriod object and
         create a wall clock period where:
             - the start of the period is set to the start of this period as time and the start of the provided period,
@@ -422,8 +420,9 @@ class TimePeriod(interface.PyTimePeriod):
             raise ValueError(f"Provided object '{specific_date}' is not an instance of datetime.date or DatePeriod")
         return WallClockPeriod(start=_start, end=_end)
 
-    def to_absolute(self, specific_date: Union['interface.PyDatePeriod', date], timezone: ZoneInfo
-                    ) -> 'interface.PyAbsolutePeriod':
+    def to_absolute(self,
+                    specific_date: interface.PyDatePeriod | date, timezone: ZoneInfo
+                    ) -> interface.PyAbsolutePeriod:
         """ This method allows you to combine the TimePeriod with either a datetime.date or a DatePeriod object and
         create an absolute period where:
             - the start of the period is set to the start of this period as time and the start of the provided period,
@@ -508,7 +507,7 @@ class DatePeriod(interface.PyDatePeriod):
         return self._end
 
     @property
-    def duration(self) -> 'AbstractDuration':
+    def duration(self) -> AbstractDuration:
         return self._duration
 
     def __str__(self):
@@ -580,9 +579,10 @@ class DatePeriod(interface.PyDatePeriod):
             return False
         return self.start <= _start and _end <= self.end
 
-    def is_before(self,
-                  other: Union['interface.PyDatePeriod', 'interface.PyAbsolutePeriod', 'interface.PyWallClockPeriod', datetime, date]
-                  ) -> bool:
+    def is_before(
+            self,
+            other: interface.PyDatePeriod | interface.PyAbsolutePeriod | interface.PyWallClockPeriod | datetime | date
+    ) -> bool:
         """ Test if this period is ending before another one begins. This check will evaluate as True in the
         following scenario:
         2024-01-01        2024-01-05
@@ -603,9 +603,7 @@ class DatePeriod(interface.PyDatePeriod):
             _value = other
         return self.end < _value
 
-    def get_interim(self,
-                    other: Union['interface.PyDatePeriod', date]
-                    ) -> Union['interface.PyDatePeriod', None]:
+    def get_interim(self, other: interface.PyDatePeriod | date) -> interface.PyDatePeriod | None:
         """ Method returns the DatePeriod between the start/end of the provided period, if `other` is a DatePeriod,
         or the DatePeriod between the point in time and the start/end of this period, depending on whether the same is
         occurring before the start of this period or after the end of it.
@@ -633,9 +631,10 @@ class DatePeriod(interface.PyDatePeriod):
             return DatePeriod(start=_start, end=_end)
         return None
 
-    def is_after(self,
-                 other: Union['interface.PyDatePeriod', 'interface.PyAbsolutePeriod', 'interface.PyWallClockPeriod', datetime, date]
-                 ) -> bool:
+    def is_after(
+            self,
+            other: interface.PyDatePeriod | interface.PyAbsolutePeriod | interface.PyWallClockPeriod | datetime | date
+    ) -> bool:
         """ Test if this period is starting after another one ends. This check will evaluate as True in the
         following scenario:
         2024-01-01        2024-01-05
@@ -657,7 +656,7 @@ class DatePeriod(interface.PyDatePeriod):
         return _value < self.start
 
     def overlaps_with(self,
-                      other: Union['interface.PyDatePeriod', 'interface.PyAbsolutePeriod', 'interface.PyWallClockPeriod']
+                      other: interface.PyDatePeriod | interface.PyAbsolutePeriod | interface.PyWallClockPeriod
                       ) -> bool:
         """ Test if this period overlaps with another period that has begun before this one. This check will evaluate
         as True in the following scenario:
@@ -701,7 +700,7 @@ class DatePeriod(interface.PyDatePeriod):
         return False
 
     def overlapped_by(self,
-                      other: Union['interface.PyDatePeriod', 'interface.PyAbsolutePeriod', 'interface.PyWallClockPeriod']
+                      other: interface.PyDatePeriod | interface.PyAbsolutePeriod | interface.PyWallClockPeriod
                       ) -> bool:
         """ Test if this period is overlapped by the other period. This check will evaluate True in the following
         scenario:
@@ -744,8 +743,8 @@ class DatePeriod(interface.PyDatePeriod):
         return False
 
     def get_overlap(self,
-                    other: Union['interface.PyDatePeriod', 'interface.PyAbsolutePeriod', 'interface.PyWallClockPeriod']
-                    ) -> Union['interface.PyDatePeriod', None]:
+                    other: interface.PyDatePeriod | interface.PyAbsolutePeriod | interface.PyWallClockPeriod
+                    ) -> interface.PyDatePeriod | None:
         """ Method returns the overlapping interval between the two periods as a new DatePeriod instance
 
         >>> period1_start = date(2024, 1, 1)
@@ -798,8 +797,8 @@ class DatePeriod(interface.PyDatePeriod):
         return None
 
     def get_disconnect(self,
-                       other: Union['interface.PyDatePeriod', 'interface.PyAbsolutePeriod', 'interface.PyWallClockPeriod']
-                       ) -> Union['interface.PyDatePeriod', None]:
+                       other: interface.PyDatePeriod | interface.PyAbsolutePeriod | interface.PyWallClockPeriod
+                       ) -> interface.PyDatePeriod | None:
         """ Method returns the disconnect interval from the point of view of the invoking period. This means the time
         disconnect from the start of this period until the start of the period to which this period is being compared
         to. Since the span of time is relative to each of the two periods, this method will always return different
@@ -849,9 +848,7 @@ class DatePeriod(interface.PyDatePeriod):
             return DatePeriod(start=start_date, end=self.end)
         return None
 
-    def to_wallclock(self,
-                     specific_time: Union['interface.PyTimePeriod', time]
-                     ) -> 'interface.PyWallClockPeriod':
+    def to_wallclock(self, specific_time: interface.PyTimePeriod | time) -> interface.PyWallClockPeriod:
         """ This method allows you to combine the DatePeriod with either a datetime.time or a TimePeriod object and
         create a wall clock period where:
             - the start of the period is set to the start of this period as date and the start of the provided period,
@@ -872,8 +869,9 @@ class DatePeriod(interface.PyDatePeriod):
         return WallClockPeriod(start=_start, end=_end)
 
     def to_absolute(self,
-                    specific_time: Union['interface.PyTimePeriod', time], timezone: ZoneInfo
-                    ) -> 'interface.PyAbsolutePeriod':
+                    specific_time: interface.PyTimePeriod | time,
+                    timezone: ZoneInfo
+                    ) -> interface.PyAbsolutePeriod:
         """ This method allows you to combine the DatePeriod with either a datetime.time or a TimePeriod object and
         create an absolute period where:
             - the start of the period is set to the start of this period as date and the start of the provided period,
@@ -980,7 +978,7 @@ class WallClockPeriod(interface.PyWallClockPeriod):
         return self._end
 
     @property
-    def duration(self) -> 'AbstractDuration':
+    def duration(self) -> AbstractDuration:
         return Duration(total_seconds=self._total, years=self._years, months=self._months, days=self._days,
                         hours=self._hours, minutes=self._minutes, seconds=self._seconds)
 
@@ -988,7 +986,7 @@ class WallClockPeriod(interface.PyWallClockPeriod):
         return f"{self.start.isoformat()}/{self.end.isoformat()}"
 
     def _time_repeats(self,
-                      _t: Union[time, interface.PyTimePeriod]) -> bool:
+                      _t: time | interface.PyTimePeriod) -> bool:
         """ Internal method that checks if the provided time or TimePeriod will repeat within the duration of this
          period.
 
@@ -1151,7 +1149,7 @@ class WallClockPeriod(interface.PyWallClockPeriod):
         return False
 
     def is_before(self,
-                  other: Union[interface.PyDatePeriod, interface.PyWallClockPeriod, date, datetime]
+                  other: interface.PyDatePeriod | interface.PyWallClockPeriod | date | datetime
                   ) -> bool:
         """ Test if this period ends before the provided `other` value. In the cases when a date or a DatePeriod is
         provided, the check will be done based on at least a 24 hour difference (ie, this period ends on the 2024-01-01
@@ -1167,7 +1165,7 @@ class WallClockPeriod(interface.PyWallClockPeriod):
         return self.end <= other.start
 
     def is_after(self,
-                 other: Union[interface.PyDatePeriod, interface.PyWallClockPeriod, date, datetime]
+                 other: interface.PyDatePeriod | interface.PyWallClockPeriod | date | datetime
                  ) -> bool:
         """ Test if this period begins after the provided `other` value. In the cases when a date or a DatePeriod is
         provided, the check will be done based on at least a 24 hour difference (ie, this period begins on the
@@ -1183,8 +1181,8 @@ class WallClockPeriod(interface.PyWallClockPeriod):
         return other.end <= self.start
 
     def get_interim(self,
-                    other: Union[interface.PyWallClockPeriod, datetime]
-                    ) -> Union[interface.PyWallClockPeriod, None]:
+                    other: interface.PyWallClockPeriod | datetime
+                    ) -> interface.PyWallClockPeriod | None:
         """ Method returns the WallClockPeriod between the start/end of the provided period, if `other` is a
         WallClockPeriod, or the WallClockPeriod between the point in time and the start/end of this period, depending on
         whether the same is occurring before the start of this period or after the end of it.
@@ -1212,7 +1210,7 @@ class WallClockPeriod(interface.PyWallClockPeriod):
             return WallClockPeriod(start=_start, end=_end)
 
     def overlaps_with(self,
-                      other: Union[interface.PyTimePeriod, interface.PyDatePeriod, interface.PyWallClockPeriod]
+                      other: interface.PyTimePeriod | interface.PyDatePeriod | interface.PyWallClockPeriod
                       ) -> bool:
         """ Test if this period overlaps with another period that has begun before this one. This check will evaluate
         as True in the following scenario:
@@ -1269,7 +1267,7 @@ class WallClockPeriod(interface.PyWallClockPeriod):
         return False
 
     def overlapped_by(self,
-                      other: Union[interface.PyTimePeriod, interface.PyDatePeriod, interface.PyWallClockPeriod]
+                      other: interface.PyTimePeriod | interface.PyDatePeriod | interface.PyWallClockPeriod
                       ) -> bool:
         """ Test if this period is overlapped by the other period. This check will evaluate True in the following
         scenario:
@@ -1325,8 +1323,8 @@ class WallClockPeriod(interface.PyWallClockPeriod):
         return False
 
     def get_overlap(self,
-                    other: Union[interface.PyTimePeriod, interface.PyDatePeriod, interface.PyWallClockPeriod]
-                    ) -> Union[interface.PyTimePeriod, interface.PyDatePeriod, interface.PyWallClockPeriod, None]:
+                    other: interface.PyTimePeriod | interface.PyDatePeriod | interface.PyWallClockPeriod
+                    ) -> interface.PyTimePeriod | interface.PyDatePeriod | interface.PyWallClockPeriod | None:
         """ Method returns the overlapping interval between the two periods as a new period instance. Returned object
         will be an instance of the class that's being tested.
 
@@ -1390,8 +1388,8 @@ class WallClockPeriod(interface.PyWallClockPeriod):
             return None
 
     def get_disconnect(self,
-                       other: Union[interface.PyTimePeriod, interface.PyDatePeriod, interface.PyWallClockPeriod]
-                       ) -> Union[interface.PyTimePeriod, interface.PyDatePeriod, interface.PyWallClockPeriod, None]:
+                       other: interface.PyTimePeriod | interface.PyDatePeriod | interface.PyWallClockPeriod
+                       ) -> interface.PyTimePeriod | interface.PyDatePeriod | interface.PyWallClockPeriod | None:
         """ Method returns the disconnect interval from the point of view of the invoking period. This means the time
         disconnect from the start of this period until the start of the period to which this period is being compared
         to. Since the span of time is relative to each of the two periods, this method will always return different
@@ -1566,7 +1564,7 @@ class AbsolutePeriod(interface.PyAbsolutePeriod):
         return self._end
 
     @property
-    def duration(self) -> 'AbstractDuration':
+    def duration(self) -> AbstractDuration:
         return Duration(total_seconds=self._total, years=self._years, months=self._months, days=self._days,
                         hours=self._hours, minutes=self._minutes, seconds=self._seconds)
 
@@ -1574,7 +1572,7 @@ class AbsolutePeriod(interface.PyAbsolutePeriod):
         return f"{self.start.isoformat()}/{self.end.isoformat()}"
 
     def _time_repeats(self,
-                      _t: Union[time, interface.PyTimePeriod]) -> bool:
+                      _t: time | interface.PyTimePeriod) -> bool:
         """ Internal method that checks if the provided time or TimePeriod will repeat within the duration of this
          period.
 
@@ -1737,7 +1735,7 @@ class AbsolutePeriod(interface.PyAbsolutePeriod):
         return False
 
     def is_before(self,
-                  other: Union[interface.PyDatePeriod, interface.PyAbsolutePeriod, date, datetime]
+                  other: interface.PyDatePeriod | interface.PyAbsolutePeriod | date | datetime
                   ) -> bool:
         """ Test if this period ends before the provided `other` value. In the cases when a date or a DatePeriod is
         provided, the check will be done based on at least a 24 hour difference (ie, this period ends on the 2024-01-01
@@ -1753,7 +1751,7 @@ class AbsolutePeriod(interface.PyAbsolutePeriod):
         return self.end <= other.start
 
     def is_after(self,
-                 other: Union[interface.PyDatePeriod, interface.PyAbsolutePeriod, date, datetime]
+                 other: interface.PyDatePeriod | interface.PyAbsolutePeriod | date | datetime
                  ) -> bool:
         """ Test if this period begins after the provided `other` value. In the cases when a date or a DatePeriod is
         provided, the check will be done based on at least a 24 hour difference (ie, this period begins on the
@@ -1769,8 +1767,8 @@ class AbsolutePeriod(interface.PyAbsolutePeriod):
         return other.end <= self.start
 
     def get_interim(self,
-                    other: Union[interface.PyAbsolutePeriod, datetime]
-                    ) -> Union[interface.PyAbsolutePeriod, None]:
+                    other: interface.PyAbsolutePeriod | datetime
+                    ) -> interface.PyAbsolutePeriod | None:
         """ Method returns the AbsolutePeriod between the start/end of the provided period, if `other` is a
         AbsolutePeriod, or the AbsolutePeriod between the point in time and the start/end of this period, depending on
         whether the same is occurring before the start of this period or after the end of it.
@@ -1798,7 +1796,7 @@ class AbsolutePeriod(interface.PyAbsolutePeriod):
             return AbsolutePeriod(start=_start, end=_end)
 
     def overlaps_with(self,
-                      other: Union[interface.PyTimePeriod, interface.PyDatePeriod, interface.PyAbsolutePeriod]
+                      other: interface.PyTimePeriod | interface.PyDatePeriod | interface.PyAbsolutePeriod
                       ) -> bool:
         """ Test if this period overlaps with another period that has begun before this one. This check will evaluate
         as True in the following scenario:
@@ -1855,7 +1853,7 @@ class AbsolutePeriod(interface.PyAbsolutePeriod):
         return False
 
     def overlapped_by(self,
-                      other: Union[interface.PyTimePeriod, interface.PyDatePeriod, interface.PyAbsolutePeriod]
+                      other: interface.PyTimePeriod | interface.PyDatePeriod | interface.PyAbsolutePeriod
                       ) -> bool:
         """ Test if this period is overlapped by the other period. This check will evaluate True in the following
         scenario:
@@ -1911,8 +1909,8 @@ class AbsolutePeriod(interface.PyAbsolutePeriod):
         return False
 
     def get_overlap(self,
-                    other: Union[interface.PyTimePeriod, interface.PyDatePeriod, interface.PyAbsolutePeriod]
-                    ) -> Union[interface.PyTimePeriod, interface.PyDatePeriod, interface.PyAbsolutePeriod, None]:
+                    other: interface.PyTimePeriod | interface.PyDatePeriod | interface.PyAbsolutePeriod
+                    ) -> interface.PyTimePeriod | interface.PyDatePeriod | interface.PyAbsolutePeriod | None:
         """ Method returns the overlapping interval between the two periods as a new period instance. Returned object
         will be an instance of the class that's being tested.
 
@@ -1976,8 +1974,8 @@ class AbsolutePeriod(interface.PyAbsolutePeriod):
             return None
 
     def get_disconnect(self,
-                       other: Union[interface.PyTimePeriod, interface.PyDatePeriod, interface.PyAbsolutePeriod]
-                       ) -> Union[interface.PyTimePeriod, interface.PyDatePeriod, interface.PyAbsolutePeriod, None]:
+                       other: interface.PyTimePeriod | interface.PyDatePeriod | interface.PyAbsolutePeriod
+                       ) -> interface.PyTimePeriod | interface.PyDatePeriod | interface.PyAbsolutePeriod | None:
         """ Method returns the disconnect interval from the point of view of the invoking period. This means the time
         disconnect from the start of this period until the start of the period to which this period is being compared
         to. Since the span of time is relative to each of the two periods, this method will always return different
