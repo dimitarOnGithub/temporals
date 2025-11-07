@@ -1,3 +1,4 @@
+from __future__ import annotations
 from zoneinfo import ZoneInfo
 from temporals.interfaces import AbstractTimePeriod, AbstractDatePeriod, AbstractAbsolutePeriod, AbstractWallClockPeriod
 from abc import ABC, abstractmethod
